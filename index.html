@@ -156,7 +156,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
       <div id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
       <div id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, pick C or O.</p></div>
       <div id="tempRow"><p class="label">Hot or iced</p><div class="opts" id="temp"></div></div>
-      <div id="kindRow"><label class="label" for="kind">Which canned drink</label><input class="field" id="kind" maxlength="30" placeholder="e.g. 100 Plus, Coke Zero" autocomplete="off"></div>
+      <div id="kindRow"><label class="label" for="kind" id="kindLabel">Which canned drink</label><input class="field" id="kind" maxlength="30" placeholder="e.g. 100 Plus, Coke Zero" autocomplete="off"></div>
 
       <div class="preview">
         <div>
@@ -217,8 +217,11 @@ const BASES = [
   { id: "michaeljackson", name: "Michael Jackson", gloss: "Soy milk + herbal jelly", milk: [], strength: false, sugar: true, temps: ["peng"] },
   { id: "sugarcane", name: "Sugarcane", gloss: "Pressed cane juice", milk: [], strength: false, sugar: false, temps: ["peng"] },
   { id: "bandung", name: "Bandung", gloss: "Rose syrup", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
-  // kind: true means the person types which drink it is, e.g. "100 Plus".
-  { id: "canned", name: "Canned Drink", gloss: "Type which one", milk: [], strength: false, sugar: false, temps: ["peng"], kind: true },
+  // kind means the person types which drink it is. `say` turns what they typed into the call.
+  { id: "canned", name: "Canned Drink", gloss: "Type which one", milk: [], strength: false, sugar: false, temps: ["peng"],
+    kind: { label: "Which canned drink", placeholder: "e.g. 100 Plus, Coke Zero", say: t => t + " (can)", gloss: "Canned drink, as it comes", missing: "Type which canned drink it is, e.g. 100 Plus." } },
+  { id: "other", name: "Other", gloss: "Not on the list", milk: [], strength: false, sugar: false, temps: ["peng"],
+    kind: { label: "Which drink", placeholder: "e.g. Teh Halia, Kopi Gu You", say: t => t, gloss: "Not on the list, said as typed", missing: "Type the drink, e.g. Teh Halia." } },
 ];
 const MILK = { "": { say: "", label: "Condensed", gloss: "condensed milk" }, c: { say: "C", label: "C", gloss: "evaporated milk" }, o: { say: "O", label: "O", gloss: "no milk" } };
 const STRENGTH = { "": { say: "", label: "Normal", gloss: "" }, gao: { say: "Gao", label: "Gao", gloss: "strong" }, po: { say: "Po", label: "Po", gloss: "weak" } };
@@ -275,7 +278,7 @@ function normalize(d) {
 // Dinosaur follows the base ("Milo Dinosaur Siew Dai") and needs no "Peng".
 function callOf(d) {
   const b = BY_ID.get(d.base);
-  if (b.kind) return d.kind ? d.kind + " (can)" : b.name;
+  if (b.kind) return d.kind ? b.kind.say(d.kind) : b.name;
   const parts = [b.name, d.dino ? "Dinosaur" : "", MILK[d.milk].say, STRENGTH[d.strength].say, SUGAR[d.sugar].say];
   if (b.temps.length > 1 && !d.dino) parts.push(TEMP[d.temp].say);
   return parts.filter(Boolean).join(" ");
@@ -283,7 +286,7 @@ function callOf(d) {
 
 function glossOf(d) {
   const b = BY_ID.get(d.base);
-  if (b.kind) return "Canned drink, as it comes";
+  if (b.kind) return b.kind.gloss;
   const parts = [b.gloss];
   if (d.dino) parts.push("extra powder on top");
   if (b.milk.length) parts.push(MILK[d.milk].gloss);
@@ -354,6 +357,7 @@ function renderBuilder() {
   $("tempRow").hidden = b.temps.length < 2 || !!draft.dino;
   $("dinoRow").hidden = !b.dino;
   $("kindRow").hidden = !b.kind;
+  if (b.kind) { $("kindLabel").textContent = b.kind.label; $("kind").placeholder = b.kind.placeholder; }
   const kosongBlocked = b.milk.length > 0 && draft.milk === "";
   document.querySelectorAll(".opt").forEach(btn => {
     const { group, value } = btn.dataset;
@@ -379,9 +383,10 @@ function addDrink() {
   }
   if (order.length >= MAX_DRINKS) { notice(`The order is full at ${MAX_DRINKS} drinks.`, true); return; }
   const d = normalize({ ...draft, name, kind: $("kind").value, note: $("note").value });
-  if (BY_ID.get(d.base).kind && !d.kind) {
+  const kind = BY_ID.get(d.base).kind;
+  if (kind && !d.kind) {
     $("kind").setAttribute("aria-invalid", "true");
-    notice("Type which canned drink it is, e.g. 100 Plus.", true);
+    notice(kind.missing, true);
     $("kind").focus();
     return;
   }
