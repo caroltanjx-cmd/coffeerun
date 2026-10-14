@@ -123,7 +123,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
 
 <div class="wrap">
   <header>
-    <div class="sign"><h1>Coffee Run</h1><small>Kopi · Teh · Tah Pau</small></div>
+    <div class="sign"><h1>Coffee Run</h1><small>Kopi · Teh · Milo</small></div>
   </header>
 
   <div class="status">
@@ -172,7 +172,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
     <section aria-labelledby="relayH">
       <h2 id="relayH">The relay</h2>
       <div class="slip">
-        <div class="head"><span id="slipCount">0 drinks</span><span>All tah pau</span></div>
+        <div class="head"><span id="slipCount">0 drinks</span></div>
         <ol class="lines" id="lines"></ol>
         <p class="empty" id="linesEmpty">No drinks yet. Add each person's drink and the combined order builds up here.</p>
         <div class="actions">
@@ -192,7 +192,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
 </div>
 
 <div class="uncle" id="uncle" hidden role="dialog" aria-modal="true" aria-label="Order for the drinks stall">
-  <div class="top"><span>Uncle, tah pau ah</span><button type="button" class="btn" id="uncleClose">Done</button></div>
+  <div class="top"><span>Drinks order</span><button type="button" class="btn" id="uncleClose">Done</button></div>
   <ol id="uncleLines"></ol>
   <div class="total" id="uncleTotal"></div>
 </div>
@@ -379,7 +379,7 @@ function consolidate() {
 }
 
 function relayText(lines, total) {
-  const out = [`Coffee run: ${total} ${total === 1 ? "drink" : "drinks"}, all tah pau`];
+  const out = [`Coffee run: ${total} ${total === 1 ? "drink" : "drinks"}`];
   for (const l of lines) out.push(`${l.qty} x ${l.call}${l.note ? " (" + l.note + ")" : ""}`);
   return out.join("\n");
 }

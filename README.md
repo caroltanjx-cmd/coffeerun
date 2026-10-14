@@ -1,6 +1,6 @@
 # Coffee Run
 
-Helps one person take drink orders for a group and relay them to a Singapore kopitiam drinks stall. For each drink, the person taking orders types who it's for and builds the drink in kopitiam terms (Kopi C Siew Dai Peng and so on). The page combines identical drinks into one tah pau list, which they can show full-screen to the uncle or copy into a chat with the stall. "Who ordered what" lists each person's drinks, for collecting money afterwards.
+Helps one person take drink orders for a group and relay them to a Singapore kopitiam drinks stall. For each drink, the person taking orders types who it's for and builds the drink in kopitiam terms (Kopi C Siew Dai Peng and so on). The page combines identical drinks into one list, which they can show full-screen to the uncle or copy into a chat with the stall. "Who ordered what" lists each person's drinks, for collecting money afterwards.
 
 - GitHub Pages: https://caroltanjx-cmd.github.io/coffeerun/
 - claude.ai: https://claude.ai/artifact/UwdGhda76JmeXYxjy3kTyh
@@ -25,6 +25,5 @@ The `BASES` array at the top of the script lists the drinks and which options ap
 | Gao / Po | Strong / weak |
 | Siew Dai / Kosong / Ga Dai | Less sugar / no sugar / more sugar |
 | Peng | Iced |
-| Tah pau | Takeaway |
 
 Kosong is turned off for drinks with condensed milk, because condensed milk is already sweet.
