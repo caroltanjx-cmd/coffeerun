@@ -39,6 +39,8 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+/* The page hides options with the hidden attribute, which a display rule (like .opt's) would otherwise override. */
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
 .wrap { max-width: 1040px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 56px; display: grid; gap: 24px; }
 
@@ -68,9 +70,12 @@ h2 { font-family: var(--display); font-weight: 800; font-size: 28px; line-height
 
 .builder { display: grid; gap: 16px; }
 .field { width: 100%; font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.menu { display: grid; gap: 14px; }
+.cat { display: grid; gap: 6px; }
+.cat-name { margin: 0; font-weight: 700; font-size: 14px; color: var(--green); }
 .bases { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
 .base, .opt { appearance: none; font: inherit; color: var(--ink); cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; text-align: left; }
-.base { padding: 8px 12px; display: grid; }
+.base { padding: 8px 12px; display: grid; align-content: start; }
 .base b { font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.1; text-transform: uppercase; }
 .base span { font-size: 12px; color: var(--muted); }
 .base[aria-pressed="true"], .opt[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
@@ -149,7 +154,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
       </div>
       <div>
         <p class="label">Drink</p>
-        <div class="bases" id="bases"></div>
+        <div class="menu" id="menu"></div>
       </div>
       <div id="dinoRow"><p class="label">Style</p><div class="opts" id="dino"></div></div>
       <div id="milkRow"><p class="label">Milk</p><div class="opts" id="milk"></div></div>
@@ -202,26 +207,39 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
 <script>
 // Kopitiam drink stall vocabulary. milk: "" = condensed milk (the default), "c" = evaporated milk, "o" = no milk,
 // "kosong" = no milk and no sugar (Milo and Horlicks only).
+// The drink list, in menu order. The relay lists drinks in this order too.
+const CATEGORIES = [
+  { id: "kopi", name: "Kopi & Teh" },
+  { id: "malt", name: "Malt" },
+  { id: "soy", name: "Soya & Chin Chow" },
+  { id: "juice", name: "Juices & Cordials" },
+  { id: "more", name: "Anything Else" },
+];
 const BASES = [
-  { id: "kopi", name: "Kopi", gloss: "Coffee", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
-  { id: "teh", name: "Teh", gloss: "Tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
-  { id: "cham", name: "Yuan Yang", gloss: "Coffee + tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
+  // Kopi & Teh
+  { id: "kopi", cat: "kopi", name: "Kopi", gloss: "Coffee", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
+  { id: "teh", cat: "kopi", name: "Teh", gloss: "Tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
+  { id: "cham", cat: "kopi", name: "Yuan Yang", gloss: "Coffee + tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
+  { id: "diaoyu", cat: "kopi", name: "Diao Yu", gloss: "Chinese tea", milk: [], strength: false, sugar: false, temps: ["hot"] },
+  // Malt
   // dino: true offers the Dinosaur style, iced with a heap of powder on top.
-  { id: "milo", name: "Milo", gloss: "Chocolate malt", milk: ["", "kosong"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
-  { id: "horlicks", name: "Horlicks", gloss: "Malted milk", milk: ["", "kosong"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
-  { id: "barley", name: "Barley", gloss: "Barley water", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
-  { id: "lime", name: "Lime Juice", gloss: "Calamansi lime", milk: [], strength: false, sugar: true, temps: ["peng"] },
-  { id: "icelemontea", name: "Ice Lemon Tea", gloss: "Citrus tea", milk: [], strength: false, sugar: true, temps: ["peng"] },
-  { id: "diaoyu", name: "Diao Yu", gloss: "Chinese tea", milk: [], strength: false, sugar: false, temps: ["hot"] },
-  { id: "soyabean", name: "Soya Bean", gloss: "Soy milk", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
-  { id: "grassjelly", name: "Chin Chow", gloss: "Grass jelly", milk: [], strength: false, sugar: true, temps: ["peng"] },
-  { id: "michaeljackson", name: "Michael Jackson", gloss: "Soy milk + grass jelly", milk: [], strength: false, sugar: true, temps: ["peng"] },
-  { id: "sugarcane", name: "Sugarcane", gloss: "Pressed cane juice", milk: [], strength: false, sugar: false, temps: ["peng"] },
-  { id: "bandung", name: "Bandung", gloss: "Rose syrup", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
+  { id: "milo", cat: "malt", name: "Milo", gloss: "Chocolate malt", milk: ["", "kosong"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
+  { id: "horlicks", cat: "malt", name: "Horlicks", gloss: "Malted milk", milk: ["", "kosong"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
+  // Soya & Chin Chow
+  { id: "soyabean", cat: "soy", name: "Soya Bean", gloss: "Soy milk", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
+  { id: "grassjelly", cat: "soy", name: "Chin Chow", gloss: "Grass jelly", milk: [], strength: false, sugar: true, temps: ["peng"] },
+  { id: "michaeljackson", cat: "soy", name: "Michael Jackson", gloss: "Soy milk + grass jelly", milk: [], strength: false, sugar: true, temps: ["peng"] },
+  // Juices & Cordials
+  { id: "barley", cat: "juice", name: "Barley", gloss: "Barley water", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
+  { id: "lime", cat: "juice", name: "Lime Juice", gloss: "Calamansi lime", milk: [], strength: false, sugar: true, temps: ["peng"] },
+  { id: "icelemontea", cat: "juice", name: "Ice Lemon Tea", gloss: "Citrus tea", milk: [], strength: false, sugar: true, temps: ["peng"] },
+  { id: "sugarcane", cat: "juice", name: "Sugarcane", gloss: "Pressed cane juice", milk: [], strength: false, sugar: false, temps: ["peng"] },
+  { id: "bandung", cat: "juice", name: "Bandung", gloss: "Rose syrup", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
+  // Anything Else
   // kind means the person types which drink it is. `say` turns what they typed into the call.
-  { id: "canned", name: "Canned Drink", gloss: "Type which one", milk: [], strength: false, sugar: false, temps: ["peng"],
+  { id: "canned", cat: "more", name: "Canned Drink", gloss: "Type which one", milk: [], strength: false, sugar: false, temps: ["peng"],
     kind: { label: "Which canned drink", placeholder: "e.g. 100 Plus, Coke Zero", say: t => t + " (can)", gloss: "Canned drink, as it comes", missing: "Type which canned drink it is, e.g. 100 Plus." } },
-  { id: "other", name: "Other", gloss: "Not on the list", milk: [], strength: false, sugar: false, temps: ["peng"],
+  { id: "other", cat: "more", name: "Other", gloss: "Not on the list", milk: [], strength: false, sugar: false, temps: ["peng"],
     kind: { label: "Which drink", placeholder: "e.g. Teh Halia, Kopi Gu You", say: t => t, gloss: "Not on the list, said as typed", missing: "Type the drink, e.g. Teh Halia." } },
 ];
 const MILK = { "": { say: "", label: "Condensed", gloss: "condensed milk" }, c: { say: "C", label: "C", gloss: "evaporated milk" }, o: { say: "O", label: "O", gloss: "no milk" }, kosong: { say: "Kosong", label: "Kosong", gloss: "no milk, no sugar" } };
@@ -325,14 +343,22 @@ function optButton(group, value, label) {
 }
 
 function buildBuilder() {
-  for (const b of BASES) {
-    const btn = document.createElement("button");
-    btn.type = "button"; btn.className = "base"; btn.dataset.base = b.id;
-    const name = document.createElement("b"); name.textContent = b.name;
-    const g = document.createElement("span"); g.textContent = b.gloss;
-    btn.append(name, g);
-    btn.addEventListener("click", () => { draft = normalize({ ...draft, base: b.id, kind: $("kind").value }); renderBuilder(); });
-    $("bases").appendChild(btn);
+  for (const c of CATEGORIES) {
+    const group = document.createElement("div"); group.className = "cat";
+    group.setAttribute("role", "group"); group.setAttribute("aria-labelledby", "cat-" + c.id);
+    const head = document.createElement("p"); head.className = "cat-name"; head.id = "cat-" + c.id; head.textContent = c.name;
+    const grid = document.createElement("div"); grid.className = "bases";
+    for (const b of BASES.filter(x => x.cat === c.id)) {
+      const btn = document.createElement("button");
+      btn.type = "button"; btn.className = "base"; btn.dataset.base = b.id;
+      const name = document.createElement("b"); name.textContent = b.name;
+      const g = document.createElement("span"); g.textContent = b.gloss;
+      btn.append(name, g);
+      btn.addEventListener("click", () => { draft = normalize({ ...draft, base: b.id, kind: $("kind").value }); renderBuilder(); });
+      grid.appendChild(btn);
+    }
+    group.append(head, grid);
+    $("menu").appendChild(group);
   }
   for (const [k, v] of Object.entries(MILK)) $("milk").appendChild(optButton("milk", k, v.label));
   for (const [k, v] of Object.entries(STRENGTH)) $("strength").appendChild(optButton("strength", k, v.label));
@@ -353,7 +379,7 @@ function buildBuilder() {
 
 function renderBuilder() {
   const b = BY_ID.get(draft.base);
-  for (const btn of $("bases").children) btn.setAttribute("aria-pressed", String(btn.dataset.base === draft.base));
+  for (const btn of $("menu").querySelectorAll(".base")) btn.setAttribute("aria-pressed", String(btn.dataset.base === draft.base));
   $("milkRow").hidden = !b.milk.length;
   $("strengthRow").hidden = !b.strength;
   $("sugarRow").hidden = !b.sugar || draft.milk === "kosong";
