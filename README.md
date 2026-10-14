@@ -27,6 +27,7 @@ The `CATEGORIES` and `BASES` arrays at the top of the script list the drink grou
 | Peng | Iced |
 | Dinosaur | Milo or Horlicks, iced, with a heap of powder on top |
 | Kosong (Milo, Horlicks) | No milk and no sugar, picked as the milk option |
+| Lime (Sugarcane) | With a squeeze of lime, e.g. "Sugarcane Lime" |
 
 Kosong is turned off for drinks with condensed milk, because condensed milk is already sweet.
 
