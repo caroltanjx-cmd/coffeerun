@@ -154,7 +154,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
       <div id="dinoRow"><p class="label">Style</p><div class="opts" id="dino"></div></div>
       <div id="milkRow"><p class="label">Milk</p><div class="opts" id="milk"></div></div>
       <div id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
-      <div id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, pick C or O.</p></div>
+      <div id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, change the milk.</p></div>
       <div id="tempRow"><p class="label">Hot or iced</p><div class="opts" id="temp"></div></div>
       <div id="kindRow"><label class="label" for="kind" id="kindLabel">Which canned drink</label><input class="field" id="kind" maxlength="30" placeholder="e.g. 100 Plus, Coke Zero" autocomplete="off"></div>
 
@@ -200,14 +200,15 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
 </div>
 
 <script>
-// Kopitiam drink stall vocabulary. milk: "" = condensed milk (the default), "c" = evaporated milk, "o" = no milk.
+// Kopitiam drink stall vocabulary. milk: "" = condensed milk (the default), "c" = evaporated milk, "o" = no milk,
+// "kosong" = no milk and no sugar (Milo and Horlicks only).
 const BASES = [
   { id: "kopi", name: "Kopi", gloss: "Coffee", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
   { id: "teh", name: "Teh", gloss: "Tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
   { id: "cham", name: "Yuan Yang", gloss: "Coffee + tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
   // dino: true offers the Dinosaur style, iced with a heap of powder on top.
-  { id: "milo", name: "Milo", gloss: "Chocolate malt", milk: ["", "o"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
-  { id: "horlicks", name: "Horlicks", gloss: "Malted milk", milk: ["", "o"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
+  { id: "milo", name: "Milo", gloss: "Chocolate malt", milk: ["", "kosong"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
+  { id: "horlicks", name: "Horlicks", gloss: "Malted milk", milk: ["", "kosong"], strength: true, sugar: true, temps: ["hot", "peng"], dino: true },
   { id: "barley", name: "Barley", gloss: "Barley water", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
   { id: "lime", name: "Lime Juice", gloss: "Calamansi lime", milk: [], strength: false, sugar: true, temps: ["peng"] },
   { id: "icelemontea", name: "Ice Lemon Tea", gloss: "Citrus tea", milk: [], strength: false, sugar: true, temps: ["peng"] },
@@ -223,12 +224,12 @@ const BASES = [
   { id: "other", name: "Other", gloss: "Not on the list", milk: [], strength: false, sugar: false, temps: ["peng"],
     kind: { label: "Which drink", placeholder: "e.g. Teh Halia, Kopi Gu You", say: t => t, gloss: "Not on the list, said as typed", missing: "Type the drink, e.g. Teh Halia." } },
 ];
-const MILK = { "": { say: "", label: "Condensed", gloss: "condensed milk" }, c: { say: "C", label: "C", gloss: "evaporated milk" }, o: { say: "O", label: "O", gloss: "no milk" } };
+const MILK = { "": { say: "", label: "Condensed", gloss: "condensed milk" }, c: { say: "C", label: "C", gloss: "evaporated milk" }, o: { say: "O", label: "O", gloss: "no milk" }, kosong: { say: "Kosong", label: "Kosong", gloss: "no milk, no sugar" } };
 const STRENGTH = { "": { say: "", label: "Normal", gloss: "" }, gao: { say: "Gao", label: "Gao", gloss: "strong" }, po: { say: "Po", label: "Po", gloss: "weak" } };
 const SUGAR = { "": { say: "", label: "Normal", gloss: "" }, siewdai: { say: "Siew Dai", label: "Siew Dai", gloss: "less sweet" }, kosong: { say: "Kosong", label: "Kosong", gloss: "no sugar" }, gadai: { say: "Ga Dai", label: "Ga Dai", gloss: "extra sweet" } };
 const TEMP = { hot: { say: "", label: "Hot", gloss: "hot" }, peng: { say: "Peng", label: "Peng", gloss: "iced" } };
 const DINO = { "": { label: "Regular" }, dino: { label: "Dinosaur" } };
-const OPT_HELP = { dino: { dino: "powder on top" }, milk: { "": "default", c: "evaporated", o: "none" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
+const OPT_HELP = { dino: { dino: "powder on top" }, milk: { "": "default", c: "evaporated", o: "none", kosong: "no milk or sugar" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
 const NAME_MAX = 30;
 const NOTE_MAX = 40;
 const KIND_MAX = 30;
@@ -269,6 +270,8 @@ function normalize(d) {
   };
   // Condensed milk is sweet, so "no sugar" only exists with C or O.
   if (out.sugar === "kosong" && b.milk.length && out.milk === "") out.sugar = "siewdai";
+  // Kosong milk means no sugar either.
+  if (out.milk === "kosong") out.sugar = "";
   // A dinosaur is always iced.
   if (out.dino) out.temp = "peng";
   return out;
@@ -353,7 +356,7 @@ function renderBuilder() {
   for (const btn of $("bases").children) btn.setAttribute("aria-pressed", String(btn.dataset.base === draft.base));
   $("milkRow").hidden = !b.milk.length;
   $("strengthRow").hidden = !b.strength;
-  $("sugarRow").hidden = !b.sugar;
+  $("sugarRow").hidden = !b.sugar || draft.milk === "kosong";
   $("tempRow").hidden = b.temps.length < 2 || !!draft.dino;
   $("dinoRow").hidden = !b.dino;
   $("kindRow").hidden = !b.kind;
