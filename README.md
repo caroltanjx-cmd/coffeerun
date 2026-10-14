@@ -25,6 +25,7 @@ The `BASES` array at the top of the script lists the drinks and which options ap
 | Gao / Po | Strong / weak |
 | Siew Dai / Kosong / Ga Dai | Less sugar / no sugar / more sugar |
 | Peng | Iced |
+| Dinosaur | Milo or Horlicks, iced, with a heap of powder on top |
 
 Kosong is turned off for drinks with condensed milk, because condensed milk is already sweet.
 

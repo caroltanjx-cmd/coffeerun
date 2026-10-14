@@ -151,6 +151,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
         <p class="label">Drink</p>
         <div class="bases" id="bases"></div>
       </div>
+      <div id="dinoRow"><p class="label">Style</p><div class="opts" id="dino"></div></div>
       <div id="milkRow"><p class="label">Milk</p><div class="opts" id="milk"></div></div>
       <div id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
       <div id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, pick C or O.</p></div>
@@ -204,8 +205,9 @@ const BASES = [
   { id: "kopi", name: "Kopi", gloss: "Coffee", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
   { id: "teh", name: "Teh", gloss: "Tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
   { id: "cham", name: "Yuan Yang", gloss: "Coffee + tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
-  { id: "milo", name: "Milo", gloss: "Chocolate malt", milk: ["", "o"], strength: false, sugar: true, temps: ["hot", "peng"] },
-  { id: "horlicks", name: "Horlicks", gloss: "Malted milk", milk: ["", "o"], strength: false, sugar: true, temps: ["hot", "peng"] },
+  // dino: true offers the Dinosaur style, iced with a heap of powder on top.
+  { id: "milo", name: "Milo", gloss: "Chocolate malt", milk: ["", "o"], strength: false, sugar: true, temps: ["hot", "peng"], dino: true },
+  { id: "horlicks", name: "Horlicks", gloss: "Malted milk", milk: ["", "o"], strength: false, sugar: true, temps: ["hot", "peng"], dino: true },
   { id: "barley", name: "Barley", gloss: "Barley water", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
   { id: "lime", name: "Lime Juice", gloss: "Calamansi lime", milk: [], strength: false, sugar: true, temps: ["peng"] },
   { id: "icelemontea", name: "Ice Lemon Tea", gloss: "Citrus tea", milk: [], strength: false, sugar: true, temps: ["peng"] },
@@ -218,7 +220,8 @@ const MILK = { "": { say: "", label: "Condensed", gloss: "condensed milk" }, c: 
 const STRENGTH = { "": { say: "", label: "Normal", gloss: "" }, gao: { say: "Gao", label: "Gao", gloss: "strong" }, po: { say: "Po", label: "Po", gloss: "weak" } };
 const SUGAR = { "": { say: "", label: "Normal", gloss: "" }, siewdai: { say: "Siew Dai", label: "Siew Dai", gloss: "less sweet" }, kosong: { say: "Kosong", label: "Kosong", gloss: "no sugar" }, gadai: { say: "Ga Dai", label: "Ga Dai", gloss: "extra sweet" } };
 const TEMP = { hot: { say: "", label: "Hot", gloss: "hot" }, peng: { say: "Peng", label: "Peng", gloss: "iced" } };
-const OPT_HELP = { milk: { "": "default", c: "evaporated", o: "none" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
+const DINO = { "": { label: "Regular" }, dino: { label: "Dinosaur" } };
+const OPT_HELP = { dino: { dino: "powder on top" }, milk: { "": "default", c: "evaporated", o: "none" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
 const NAME_MAX = 30;
 const NOTE_MAX = 40;
 const KIND_MAX = 30;
@@ -227,7 +230,7 @@ const STORE_KEY = "coffeerun.order";
 const BY_ID = new Map(BASES.map(b => [b.id, b]));
 
 let order = [];            // drinks in the order they were added: { name, base, milk, strength, sugar, temp, note }
-let draft = { base: "kopi", milk: "", strength: "", sugar: "", temp: "hot" };
+let draft = { base: "kopi", dino: "", milk: "", strength: "", sugar: "", temp: "hot" };
 const $ = id => document.getElementById(id);
 
 function notice(text, isErr) {
@@ -249,6 +252,7 @@ function normalize(d) {
   const out = {
     name: text(d.name, NAME_MAX),
     base: b.id,
+    dino: b.dino ? pick(d.dino, Object.keys(DINO)) : "",
     milk: b.milk.length ? pick(d.milk, b.milk) : "",
     strength: b.strength ? pick(d.strength, Object.keys(STRENGTH)) : "",
     sugar: b.sugar ? pick(d.sugar, Object.keys(SUGAR)) : "",
@@ -258,15 +262,18 @@ function normalize(d) {
   };
   // Condensed milk is sweet, so "no sugar" only exists with C or O.
   if (out.sugar === "kosong" && b.milk.length && out.milk === "") out.sugar = "siewdai";
+  // A dinosaur is always iced.
+  if (out.dino) out.temp = "peng";
   return out;
 }
 
 // What you say at the counter: base, milk, strength, sugar, then iced. "Kopi C Gao Siew Dai Peng".
+// Dinosaur follows the base ("Milo Dinosaur Siew Dai") and needs no "Peng".
 function callOf(d) {
   const b = BY_ID.get(d.base);
   if (b.kind) return d.kind ? d.kind + " (can)" : b.name;
-  const parts = [b.name, MILK[d.milk].say, STRENGTH[d.strength].say, SUGAR[d.sugar].say];
-  if (b.temps.length > 1) parts.push(TEMP[d.temp].say);
+  const parts = [b.name, d.dino ? "Dinosaur" : "", MILK[d.milk].say, STRENGTH[d.strength].say, SUGAR[d.sugar].say];
+  if (b.temps.length > 1 && !d.dino) parts.push(TEMP[d.temp].say);
   return parts.filter(Boolean).join(" ");
 }
 
@@ -274,6 +281,7 @@ function glossOf(d) {
   const b = BY_ID.get(d.base);
   if (b.kind) return "Canned drink, as it comes";
   const parts = [b.gloss];
+  if (d.dino) parts.push("extra powder on top");
   if (b.milk.length) parts.push(MILK[d.milk].gloss);
   if (d.strength) parts.push(STRENGTH[d.strength].gloss);
   if (d.sugar) parts.push(SUGAR[d.sugar].gloss);
@@ -320,6 +328,7 @@ function buildBuilder() {
   for (const [k, v] of Object.entries(STRENGTH)) $("strength").appendChild(optButton("strength", k, v.label));
   for (const [k, v] of Object.entries(SUGAR)) $("sugar").appendChild(optButton("sugar", k, v.label));
   for (const [k, v] of Object.entries(TEMP)) $("temp").appendChild(optButton("temp", k, v.label));
+  for (const [k, v] of Object.entries(DINO)) $("dino").appendChild(optButton("dino", k, v.label));
   $("addBtn").addEventListener("click", addDrink);
   $("note").addEventListener("keydown", e => { if (e.key === "Enter") addDrink(); });
   $("name").addEventListener("input", () => $("name").removeAttribute("aria-invalid"));
@@ -338,7 +347,8 @@ function renderBuilder() {
   $("milkRow").hidden = !b.milk.length;
   $("strengthRow").hidden = !b.strength;
   $("sugarRow").hidden = !b.sugar;
-  $("tempRow").hidden = b.temps.length < 2;
+  $("tempRow").hidden = b.temps.length < 2 || !!draft.dino;
+  $("dinoRow").hidden = !b.dino;
   $("kindRow").hidden = !b.kind;
   const kosongBlocked = b.milk.length > 0 && draft.milk === "";
   document.querySelectorAll(".opt").forEach(btn => {
