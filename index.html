@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Coffee Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: kopitiam signboard header, then two columns (order builder | the relay slip), then who-ordered-what for collecting money. */
+:root {
+  --bg: #eef4f0;
+  --surface: #ffffff;
+  --ink: #15241d;
+  --muted: #56685f;
+  --line: #cddbd3;
+  --green: #1d6a4c;
+  --green-ink: #ffffff;
+  --green-soft: #dcebe3;
+  --red: #c4362b;
+  --red-ink: #ffffff;
+  --display: "Big Shoulders Display", "Arial Narrow", "Segoe UI", sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1612; --surface: #15211b; --ink: #e2ebe6; --muted: #91a69b; --line: #283a31;
+    --green: #4fb487; --green-ink: #07130d; --green-soft: #1b3328; --red: #ef6b5d; --red-ink: #1d0604;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1612; --surface: #15211b; --ink: #e2ebe6; --muted: #91a69b; --line: #283a31;
+  --green: #4fb487; --green-ink: #07130d; --green-soft: #1b3328; --red: #ef6b5d; --red-ink: #1d0604;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 56px; display: grid; gap: 24px; }
+
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 16px; }
+.sign { background: var(--green); color: var(--green-ink); border-radius: 6px; padding: 8px 18px 6px; display: inline-flex; align-items: baseline; gap: 12px; }
+h1 { font-family: var(--display); font-weight: 900; font-size: clamp(36px, 8vw, 56px); line-height: 1; letter-spacing: .02em; text-transform: uppercase; margin: 0; }
+.sign small { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.who { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px 6px 6px; min-width: 0; }
+.who img { width: 28px; height: 28px; border-radius: 50%; flex: none; }
+.who span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; border-block: 1px solid var(--line); padding-block: 12px; }
+.pill { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+.pill.closed { background: var(--red); color: var(--red-ink); }
+.status .lead { flex: 1 1 240px; min-width: 0; font-weight: 600; }
+.owner { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; }
+
+.btn { font: inherit; font-weight: 600; font-size: 14px; padding: 7px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.btn:hover:not(:disabled) { border-color: var(--ink); }
+.btn:focus-visible, .opt:focus-visible, .base:focus-visible, input:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.go { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.btn.danger { background: var(--red); border-color: var(--red); color: var(--red-ink); }
+.notice { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--green-soft); font-size: 14px; }
+.notice.err { background: var(--surface); border: 1px solid var(--red); color: var(--red); }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 760px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+h2 { font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1.1; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 12px; }
+.label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+
+.builder { display: grid; gap: 16px; }
+.bases { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.base, .opt { appearance: none; font: inherit; color: var(--ink); cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; text-align: left; }
+.base { padding: 8px 12px; display: grid; }
+.base b { font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.1; text-transform: uppercase; }
+.base span { font-size: 12px; color: var(--muted); }
+.base[aria-pressed="true"], .opt[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
+.base[aria-pressed="true"] span { color: inherit; opacity: .8; }
+.base:hover:not(:disabled), .opt:hover:not(:disabled) { border-color: var(--ink); }
+.base:disabled, .opt:disabled { cursor: default; opacity: .45; }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt { padding: 5px 12px; font-size: 14px; display: inline-flex; gap: 6px; align-items: baseline; }
+.opt small { font-size: 11px; opacity: .75; }
+.row[hidden] { display: none; }
+.hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+
+.preview { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; }
+.call { font-family: var(--display); font-weight: 900; font-size: clamp(30px, 6vw, 40px); line-height: 1; text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+.gloss { color: var(--muted); font-size: 14px; }
+.addrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.addrow input { flex: 1 1 180px; min-width: 0; font: inherit; font-size: 14px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.mine { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mine li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.mine li div { min-width: 0; }
+.mine li b { font-weight: 700; }
+.mine li em { font-style: normal; color: var(--muted); font-size: 13px; }
+
+.slip { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--red); border-radius: 4px 4px 10px 10px; padding: 16px; display: grid; gap: 12px; }
+.slip .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.lines { list-style: none; margin: 0; padding: 0; font-family: var(--mono); }
+.lines li { display: grid; grid-template-columns: 3.2ch minmax(0, 1fr); gap: 8px; padding-block: 7px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.lines .q { font-weight: 600; color: var(--red); font-variant-numeric: tabular-nums; text-align: right; }
+.lines .n { font-weight: 600; }
+.lines .note { display: block; font-family: var(--body); font-size: 13px; color: var(--muted); font-weight: 400; }
+.slip .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.empty { color: var(--muted); padding-block: 14px; border-block: 1px dashed var(--line); margin: 0; }
+textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); font-size: 13px; padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+
+.roll { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.roll li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.roll img { width: 32px; height: 32px; border-radius: 50%; }
+.roll .person { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roll .drinks { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+@media (max-width: 480px) { .roll li { grid-template-columns: 32px minmax(0, 1fr); } .roll .drinks { grid-column: 2; justify-content: flex-start; } }
+
+.uncle { position: fixed; inset: 0; z-index: 10; background: var(--green); color: var(--green-ink); overflow: auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px); }
+.uncle .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; font-family: var(--mono); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
+.uncle .top .btn { background: var(--green-ink); color: var(--green); border-color: var(--green-ink); }
+.uncle ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.uncle li { font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: clamp(34px, 8vw, 72px); line-height: 1; overflow-wrap: anywhere; }
+.uncle li span { opacity: .7; margin-right: .3em; font-variant-numeric: tabular-nums; }
+.uncle li small { display: block; font-family: var(--body); font-weight: 600; text-transform: none; font-size: clamp(16px, 3vw, 24px); opacity: .85; }
+.uncle .total { margin-top: 20px; font-family: var(--display); font-weight: 800; font-size: clamp(24px, 5vw, 40px); text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="sign"><h1>Coffee Run</h1><small>Kopi · Teh · Tah Pau</small></div>
+    <div class="who" id="who" hidden><img id="whoImg" alt="" referrerpolicy="no-referrer"><span id="whoName"></span></div>
+  </header>
+
+  <div class="status">
+    <span class="pill" id="pill">Loading</span>
+    <div class="lead" id="lead">Loading orders…</div>
+    <div class="owner" id="owner" hidden>
+      <button type="button" class="btn" id="closeBtn">Close orders</button>
+      <button type="button" class="btn" id="newBtn">Start a new run</button>
+      <span id="newConfirm" hidden>Clear every order for everyone?
+        <button type="button" class="btn danger" id="newYes">Clear orders</button>
+        <button type="button" class="btn" id="newNo">Cancel</button>
+      </span>
+    </div>
+  </div>
+
+  <p class="notice" id="notice" hidden></p>
+
+  <div class="cols">
+    <section class="builder" aria-labelledby="orderH">
+      <h2 id="orderH">Your order</h2>
+      <div>
+        <p class="label">Drink</p>
+        <div class="bases" id="bases"></div>
+      </div>
+      <div class="row" id="milkRow"><p class="label">Milk</p><div class="opts" id="milk"></div></div>
+      <div class="row" id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
+      <div class="row" id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, pick C or O.</p></div>
+      <div class="row" id="tempRow"><p class="label">Hot or iced</p><div class="opts" id="temp"></div></div>
+
+      <div class="preview">
+        <div>
+          <p class="label">Say it as</p>
+          <div class="call" id="call"></div>
+          <div class="gloss" id="gloss"></div>
+        </div>
+        <div class="addrow">
+          <input id="note" maxlength="40" placeholder="Note, e.g. less ice" aria-label="Note for this drink" autocomplete="off">
+          <button type="button" class="btn go" id="addBtn">Add to my order</button>
+        </div>
+        <p class="label" id="mineLabel">Your drinks (up to 3)</p>
+        <ul class="mine" id="mine"></ul>
+        <p class="hint" id="mineEmpty">Nothing yet. Build a drink above and add it.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="relayH">
+      <h2 id="relayH">The relay</h2>
+      <div class="slip">
+        <div class="head"><span id="slipCount">0 drinks</span><span>All tah pau</span></div>
+        <ol class="lines" id="lines"></ol>
+        <p class="empty" id="linesEmpty">No orders yet. The combined order shows up here as people add drinks.</p>
+        <div class="actions">
+          <button type="button" class="btn go" id="uncleBtn">Show the uncle</button>
+          <button type="button" class="btn" id="copyBtn">Copy order</button>
+        </div>
+        <textarea class="copybox" id="copyBox" readonly hidden aria-label="Order text to copy"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <section aria-labelledby="rollH">
+    <h2 id="rollH">Who ordered what</h2>
+    <p class="empty" id="rollEmpty">Nobody has ordered yet.</p>
+    <ul class="roll" id="roll" hidden></ul>
+  </section>
+</div>
+
+<div class="uncle" id="uncle" hidden role="dialog" aria-modal="true" aria-label="Order for the drinks stall">
+  <div class="top"><span>Uncle, tah pau ah</span><button type="button" class="btn" id="uncleClose">Done</button></div>
+  <ol id="uncleLines"></ol>
+  <div class="total" id="uncleTotal"></div>
+</div>
+
+<script>
+// Kopitiam drink stall vocabulary. milk: "" = condensed milk (the default), "c" = evaporated milk, "o" = no milk.
+const BASES = [
+  { id: "kopi", name: "Kopi", gloss: "Coffee", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
+  { id: "teh", name: "Teh", gloss: "Tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
+  { id: "cham", name: "Cham", gloss: "Coffee + tea", milk: ["", "c", "o"], strength: true, sugar: true, temps: ["hot", "peng"] },
+  { id: "milo", name: "Milo", gloss: "Chocolate malt", milk: ["", "o"], strength: false, sugar: true, temps: ["hot", "peng"] },
+  { id: "horlicks", name: "Horlicks", gloss: "Malted milk", milk: ["", "o"], strength: false, sugar: true, temps: ["hot", "peng"] },
+  { id: "barley", name: "Barley", gloss: "Barley water", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
+  { id: "lime", name: "Lime Juice", gloss: "Calamansi lime", milk: [], strength: false, sugar: true, temps: ["peng"] },
+  { id: "chrysanthemum", name: "Chrysanthemum", gloss: "Flower tea", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
+];
+const MILK = { "": { say: "", label: "Condensed", gloss: "condensed milk" }, c: { say: "C", label: "C", gloss: "evaporated milk" }, o: { say: "O", label: "O", gloss: "no milk" } };
+const STRENGTH = { "": { say: "", label: "Normal", gloss: "" }, gao: { say: "Gao", label: "Gao", gloss: "strong" }, po: { say: "Po", label: "Po", gloss: "weak" } };
+const SUGAR = { "": { say: "", label: "Normal", gloss: "" }, siewdai: { say: "Siew Dai", label: "Siew Dai", gloss: "less sweet" }, kosong: { say: "Kosong", label: "Kosong", gloss: "no sugar" }, gadai: { say: "Ga Dai", label: "Ga Dai", gloss: "extra sweet" } };
+const TEMP = { hot: { say: "", label: "Hot", gloss: "hot" }, peng: { say: "Peng", label: "Peng", gloss: "iced" } };
+const OPT_HELP = { milk: { "": "default", c: "evaporated", o: "none" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
+const MAX = 3;
+const NOTE_MAX = 40;
+const BY_ID = new Map(BASES.map(b => [b.id, b]));
+
+let db = null, user = null, myId = null, owner = false;
+let orders = new Map();    // userId -> drinks[]
+let closed = false;
+let loaded = false, readOnly = false, unavailable = false;
+let writeChain = Promise.resolve();
+let pending = 0, saved = [], writeFailed = false, canWrite = null;
+let draft = { base: "kopi", milk: "", strength: "", sugar: "", temp: "hot" };
+const VIEW_ONLY = "You can see the order but not add to it. Ask the owner for Contributor access.";
+const $ = id => document.getElementById(id);
+
+function notice(text, isErr) {
+  const n = $("notice");
+  n.textContent = text || "";
+  n.classList.toggle("err", !!isErr);
+  n.hidden = !text;
+}
+
+const NO_AVATAR = "data:image/svg+xml," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#91a69b"/></svg>');
+
+// Avatars come from this page's own origin or as data: images. Load nothing else.
+function safeAvatar(url) {
+  if (typeof url !== "string") return NO_AVATAR;
+  if (/^data:image\//i.test(url)) return url;
+  try {
+    const u = new URL(url, location.href);
+    if (u.protocol === "https:" && u.host === location.host) return u.href;
+  } catch (e) {}
+  return NO_AVATAR;
+}
+
+function avatarImg(url, alt) {
+  const img = document.createElement("img");
+  img.referrerPolicy = "no-referrer"; img.loading = "lazy";
+  img.src = safeAvatar(url); img.alt = alt;
+  return img;
+}
+
+// ---- Drinks ----
+
+// Force a drink into a valid shape for its base. Used on the draft and on every
+// order read from the db, since anyone can write anything to their own order.
+function normalize(d) {
+  const b = BY_ID.get(d && d.base);
+  if (!b) return null;
+  const pick = (v, ok) => (ok.includes(v) ? v : ok[0]);
+  const out = {
+    base: b.id,
+    milk: b.milk.length ? pick(d.milk, b.milk) : "",
+    strength: b.strength ? pick(d.strength, Object.keys(STRENGTH)) : "",
+    sugar: b.sugar ? pick(d.sugar, Object.keys(SUGAR)) : "",
+    temp: pick(d.temp, b.temps),
+    note: typeof d.note === "string" ? d.note.trim().slice(0, NOTE_MAX) : "",
+  };
+  // Condensed milk is sweet, so "no sugar" only exists with C or O.
+  if (out.sugar === "kosong" && b.milk.length && out.milk === "") out.sugar = "siewdai";
+  return out;
+}
+
+// What you say at the counter: base, milk, strength, sugar, then iced. "Kopi C Gao Siew Dai Peng".
+function callOf(d) {
+  const b = BY_ID.get(d.base);
+  const parts = [b.name, MILK[d.milk].say, STRENGTH[d.strength].say, SUGAR[d.sugar].say];
+  if (b.temps.length > 1) parts.push(TEMP[d.temp].say);
+  return parts.filter(Boolean).join(" ");
+}
+
+function glossOf(d) {
+  const b = BY_ID.get(d.base);
+  const parts = [b.gloss];
+  if (b.milk.length) parts.push(MILK[d.milk].gloss);
+  if (d.strength) parts.push(STRENGTH[d.strength].gloss);
+  if (d.sugar) parts.push(SUGAR[d.sugar].gloss);
+  parts.push(TEMP[d.temp].gloss);
+  return parts.join(" · ");
+}
+
+function cleanDrinks(data) {
+  const raw = data && Array.isArray(data.drinks) ? data.drinks : [];
+  return raw.map(normalize).filter(Boolean).slice(0, MAX);
+}
+
+// ---- Builder ----
+
+function optButton(group, value, label) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "opt"; b.dataset.group = group; b.dataset.value = value;
+  b.append(label);
+  const help = OPT_HELP[group] && OPT_HELP[group][value];
+  if (help) { const s = document.createElement("small"); s.textContent = help; b.append(s); }
+  b.addEventListener("click", () => { draft[group] = value; draft = normalize(draft); renderBuilder(); });
+  return b;
+}
+
+function buildBuilder() {
+  for (const b of BASES) {
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "base"; btn.dataset.base = b.id;
+    const name = document.createElement("b"); name.textContent = b.name;
+    const g = document.createElement("span"); g.textContent = b.gloss;
+    btn.append(name, g);
+    btn.addEventListener("click", () => { draft = normalize({ ...draft, base: b.id }); renderBuilder(); });
+    $("bases").appendChild(btn);
+  }
+  for (const [k, v] of Object.entries(MILK)) $("milk").appendChild(optButton("milk", k, v.label));
+  for (const [k, v] of Object.entries(STRENGTH)) $("strength").appendChild(optButton("strength", k, v.label));
+  for (const [k, v] of Object.entries(SUGAR)) $("sugar").appendChild(optButton("sugar", k, v.label));
+  for (const [k, v] of Object.entries(TEMP)) $("temp").appendChild(optButton("temp", k, v.label));
+  $("addBtn").addEventListener("click", addDrink);
+  $("note").addEventListener("keydown", e => { if (e.key === "Enter") addDrink(); });
+}
+
+function canOrder() { return !!(db && myId) && !readOnly && (!closed || owner); }
+
+function renderBuilder() {
+  const b = BY_ID.get(draft.base);
+  const off = !canOrder();
+  for (const btn of $("bases").children) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.base === draft.base));
+    btn.disabled = off;
+  }
+  $("milkRow").hidden = !b.milk.length;
+  $("strengthRow").hidden = !b.strength;
+  $("sugarRow").hidden = !b.sugar;
+  $("tempRow").hidden = b.temps.length < 2;
+  const kosongBlocked = b.milk.length > 0 && draft.milk === "";
+  document.querySelectorAll(".opt").forEach(btn => {
+    const { group, value } = btn.dataset;
+    btn.setAttribute("aria-pressed", String(draft[group] === value));
+    btn.hidden = group === "milk" && !b.milk.includes(value);
+    btn.disabled = off || (group === "sugar" && value === "kosong" && kosongBlocked);
+  });
+  $("sugarHint").hidden = !kosongBlocked;
+  $("call").textContent = callOf(draft);
+  $("gloss").textContent = glossOf(draft);
+  const mine = orders.get(myId) || [];
+  $("addBtn").disabled = off || mine.length >= MAX;
+  $("note").disabled = off;
+}
+
+function renderMine() {
+  const mine = orders.get(myId) || [];
+  const off = !canOrder();
+  $("mine").replaceChildren(...mine.map((d, i) => {
+    const li = document.createElement("li");
+    const text = document.createElement("div");
+    const b = document.createElement("b"); b.textContent = callOf(d);
+    text.append(b);
+    if (d.note) { const em = document.createElement("em"); em.textContent = " · " + d.note; text.append(em); }
+    const rm = document.createElement("button");
+    rm.type = "button"; rm.className = "btn"; rm.textContent = "Remove"; rm.disabled = off;
+    rm.setAttribute("aria-label", "Remove " + callOf(d));
+    rm.addEventListener("click", () => save(mine.filter((_, k) => k !== i)));
+    li.append(text, rm);
+    return li;
+  }));
+  $("mineEmpty").hidden = mine.length > 0;
+  $("mineLabel").textContent = `Your drinks (${mine.length} of ${MAX})`;
+}
+
+function addDrink() {
+  if (!canOrder()) return;
+  const mine = orders.get(myId) || [];
+  if (mine.length >= MAX) { notice(`You can order up to ${MAX} drinks. Remove one to add another.`); return; }
+  const d = normalize({ ...draft, note: $("note").value });
+  $("note").value = "";
+  save([...mine, d]);
+}
+
+// ---- Relay ----
+
+// Identical drinks with the same note collapse into one line, ordered the way the stall lists drinks.
+function consolidate(shown) {
+  const lines = new Map();
+  for (const drinks of shown.values()) for (const d of drinks) {
+    const key = callOf(d) + "\u0000" + d.note.toLowerCase();
+    const line = lines.get(key) || { call: callOf(d), note: d.note, base: d.base, qty: 0 };
+    line.qty++;
+    lines.set(key, line);
+  }
+  const rank = id => BASES.findIndex(b => b.id === id);
+  return [...lines.values()].sort((a, b) => rank(a.base) - rank(b.base) || a.call.localeCompare(b.call) || a.note.localeCompare(b.note));
+}
+
+function relayText(lines, total) {
+  const out = [`Coffee run: ${total} ${total === 1 ? "drink" : "drinks"}, all tah pau`];
+  for (const l of lines) out.push(`${l.qty} x ${l.call}${l.note ? " (" + l.note + ")" : ""}`);
+  return out.join("\n");
+}
+
+let lastLines = [], lastTotal = 0;
+
+function renderRelay(shown) {
+  const lines = consolidate(shown);
+  const total = lines.reduce((s, l) => s + l.qty, 0);
+  lastLines = lines; lastTotal = total;
+  $("lines").replaceChildren(...lines.map(l => {
+    const li = document.createElement("li");
+    const q = document.createElement("span"); q.className = "q"; q.textContent = l.qty + "×";
+    const n = document.createElement("span"); n.className = "n"; n.textContent = l.call;
+    if (l.note) { const s = document.createElement("span"); s.className = "note"; s.textContent = l.note; n.append(s); }
+    li.append(q, n);
+    return li;
+  }));
+  $("linesEmpty").hidden = lines.length > 0;
+  $("slipCount").textContent = `${total} ${total === 1 ? "drink" : "drinks"}`;
+  $("uncleBtn").disabled = $("copyBtn").disabled = !lines.length;
+  if (!$("uncle").hidden) renderUncle();
+}
+
+function renderUncle() {
+  $("uncleLines").replaceChildren(...lastLines.map(l => {
+    const li = document.createElement("li");
+    const q = document.createElement("span"); q.textContent = l.qty;
+    li.append(q, l.call);
+    if (l.note) { const s = document.createElement("small"); s.textContent = l.note; li.append(s); }
+    return li;
+  }));
+  $("uncleTotal").textContent = `${lastTotal} ${lastTotal === 1 ? "drink" : "drinks"} total`;
+}
+
+function setupRelay() {
+  $("uncleBtn").addEventListener("click", () => {
+    renderUncle();
+    $("uncle").hidden = false;
+    $("uncleClose").focus();
+  });
+  const closeUncle = () => { $("uncle").hidden = true; $("uncleBtn").focus(); };
+  $("uncleClose").addEventListener("click", closeUncle);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("uncle").hidden) closeUncle(); });
+  $("copyBtn").addEventListener("click", () => {
+    const text = relayText(lastLines, lastTotal);
+    const box = $("copyBox");
+    const fallback = () => {
+      box.value = text; box.hidden = false; box.focus(); box.select();
+      notice("Copying isn't allowed here. The order is selected below, so copy it yourself.");
+    };
+    try {
+      navigator.clipboard.writeText(text).then(() => {
+        box.hidden = true;
+        notice("Order copied. Paste it into your chat with the stall.");
+      }, fallback);
+    } catch (e) { fallback(); }
+  });
+}
+
+// ---- Page ----
+
+let renderSeq = 0;
+
+async function render() {
+  const seq = ++renderSeq;
+  const shown = new Map(orders);
+  const ids = [...shown.keys()];
+  renderBuilder();
+  renderMine();
+  renderRelay(shown);
+  renderStatus(shown);
+  const ps = user && ids.length ? await user.profiles(ids) : {};
+  if (seq !== renderSeq) return;
+  renderRoll(shown, {
+    nameOf: id => (id === myId ? "You" : (ps[id] && ps[id].name) || "Someone"),
+    avatarOf: id => ps[id] && ps[id].avatarUrl,
+  });
+}
+
+function renderStatus(shown) {
+  const pill = $("pill");
+  pill.classList.toggle("closed", closed);
+  pill.textContent = !loaded ? "Loading" : unavailable ? "Offline" : closed ? "Closed" : "Taking orders";
+  const people = shown.size;
+  let lead;
+  if (!loaded) lead = "Loading orders…";
+  else if (unavailable) lead = "Orders aren't available.";
+  else if (closed) lead = `Orders are closed. The runner is getting ${people === 1 ? "1 person's" : people + " people's"} drinks.`;
+  else if (!people) lead = "Nobody has ordered yet. Add your drink.";
+  else lead = `${people} ${people === 1 ? "person has" : "people have"} ordered.`;
+  $("lead").textContent = lead;
+  $("closeBtn").textContent = closed ? "Reopen orders" : "Close orders";
+}
+
+function renderRoll(shown, { nameOf, avatarOf }) {
+  const order = [...shown.keys()].sort((a, b) => (a === myId ? -1 : b === myId ? 1 : nameOf(a).localeCompare(nameOf(b))));
+  $("roll").replaceChildren(...order.map(uid => {
+    const li = document.createElement("li");
+    const person = document.createElement("div"); person.className = "person"; person.textContent = nameOf(uid);
+    const drinks = document.createElement("div"); drinks.className = "drinks";
+    for (const d of shown.get(uid)) {
+      const chip = document.createElement("span"); chip.className = "chip";
+      chip.textContent = callOf(d) + (d.note ? " · " + d.note : "");
+      drinks.appendChild(chip);
+    }
+    li.append(avatarImg(avatarOf(uid), ""), person, drinks);
+    return li;
+  }));
+  $("roll").hidden = !order.length;
+  $("rollEmpty").hidden = !!order.length;
+}
+
+function setMine(drinks) {
+  if (drinks.length) orders.set(myId, drinks); else orders.delete(myId);
+}
+
+// Writes go out one at a time, so a fast add-then-remove lands in order.
+function save(next) {
+  if (!canOrder()) return;
+  notice("");
+  setMine(next);
+  render();
+  const ref = db.doc("orders/" + myId);
+  pending++;
+  writeChain = writeChain.then(async () => {
+    if (writeFailed) return;
+    try {
+      if (next.length) await ref.set({ drinks: next, at: Date.now() });
+      else await ref.delete();
+      saved = next;
+    } catch (e) {
+      writeFailed = true;
+      if (e && e.code === "invalid_argument" && canWrite === null) {
+        readOnly = true;
+        notice(VIEW_ONLY, true);
+      } else if (e && e.code === "quota_exceeded") {
+        notice("The order is full and can't take more drinks.", true);
+      } else {
+        notice("Your order didn't save, so it's back to what it was. Check your connection and try again.", true);
+      }
+    }
+  }).finally(() => {
+    if (--pending) return;
+    if (writeFailed) { writeFailed = false; setMine(saved); render(); }
+  });
+}
+
+function setupOwner() {
+  $("owner").hidden = false;
+  $("closeBtn").addEventListener("click", async () => {
+    $("closeBtn").disabled = true;
+    try { await db.doc("run/state").set({ closed: !closed, at: Date.now() }); }
+    catch (e) { notice("That didn't save. Check your connection and try again.", true); }
+    $("closeBtn").disabled = false;
+  });
+  const btn = $("newBtn"), box = $("newConfirm");
+  btn.addEventListener("click", () => { btn.hidden = true; box.hidden = false; $("newYes").focus(); });
+  $("newNo").addEventListener("click", () => { box.hidden = true; btn.hidden = false; btn.focus(); });
+  $("newYes").addEventListener("click", async () => {
+    $("newYes").disabled = $("newNo").disabled = true;
+    try {
+      await writeChain;
+      const snap = await db.collection("orders").get();
+      for (const d of snap.docs) await db.doc("orders/" + d.id).delete();
+      await db.doc("run/state").set({ closed: false, at: Date.now() });
+      notice(`Cleared ${snap.size} ${snap.size === 1 ? "order" : "orders"}. The new run is open.`);
+    } catch (e) {
+      notice("Some orders didn't clear. Check your connection and try again.", true);
+    }
+    $("newYes").disabled = $("newNo").disabled = false;
+    box.hidden = true; btn.hidden = false;
+  });
+}
+
+async function start() {
+  buildBuilder();
+  setupRelay();
+  render();
+  // Outside claude.ai there is no artifact runtime, so nobody can order.
+  if (typeof claude === "undefined") { stopLoading("Open this page on claude.ai and sign in to order."); return; }
+  [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (user) {
+    const me = await user.me();
+    myId = me.id;
+    if (myId) {
+      $("whoImg").src = safeAvatar(me.avatarUrl);
+      $("whoName").textContent = me.name || "Signed in";
+      $("who").hidden = false;
+    }
+  }
+  if (!db || !myId) { stopLoading("Sign in to claude.ai to order and see the combined order."); return; }
+  owner = await user.isOwner();
+  if (owner) setupOwner();
+  canWrite = await user.can("data.write");
+  if (canWrite === false) { readOnly = true; notice(VIEW_ONLY, true); }
+
+  db.doc("run/state").onSnapshot(snap => {
+    const data = snap && snap.exists ? snap.data() : null;
+    closed = !!(data && data.closed === true);
+    render();
+  }, () => {});
+
+  db.collection("orders").onSnapshot(snap => {
+    const next = new Map();
+    for (const d of snap.docs) {
+      let drinks;
+      try { drinks = cleanDrinks(d.data()); } catch (e) { continue; }
+      if (drinks.length) next.set(d.id, drinks);
+    }
+    // A snapshot may predate my pending writes, so keep my local order until they land.
+    if (pending) {
+      const mine = orders.get(myId) || [];
+      if (mine.length) next.set(myId, mine); else next.delete(myId);
+    } else {
+      saved = next.get(myId) || [];
+    }
+    orders = next;
+    loaded = true;
+    render();
+  }, () => {
+    if (loaded) notice("Live updates stopped. Reload the page to reconnect.", true);
+    else stopLoading("Orders couldn't load. Reload the page to try again.");
+  });
+}
+
+function stopLoading(msg) {
+  loaded = true; unavailable = true; readOnly = true;
+  notice(msg, true);
+  render();
+}
+
+start().catch(() => stopLoading("Orders couldn't load. Reload the page to try again."));
+</script>
+
+</body>
+</html>
