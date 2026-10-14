@@ -156,6 +156,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
         <p class="label">Drink</p>
         <div class="menu" id="menu"></div>
       </div>
+      <div id="limeRow"><p class="label">Lime</p><div class="opts" id="lime"></div></div>
       <div id="dinoRow"><p class="label">Style</p><div class="opts" id="dino"></div></div>
       <div id="milkRow"><p class="label">Milk</p><div class="opts" id="milk"></div></div>
       <div id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
@@ -233,7 +234,8 @@ const BASES = [
   { id: "barley", cat: "juice", name: "Barley", gloss: "Barley water", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
   { id: "lime", cat: "juice", name: "Lime Juice", gloss: "Calamansi lime", milk: [], strength: false, sugar: true, temps: ["peng"] },
   { id: "icelemontea", cat: "juice", name: "Ice Lemon Tea", gloss: "Citrus tea", milk: [], strength: false, sugar: true, temps: ["peng"] },
-  { id: "sugarcane", cat: "juice", name: "Sugarcane", gloss: "Pressed cane juice", milk: [], strength: false, sugar: false, temps: ["peng"] },
+  // lime: true offers a squeeze of lime in the drink.
+  { id: "sugarcane", cat: "juice", name: "Sugarcane", gloss: "Pressed cane juice", milk: [], strength: false, sugar: false, temps: ["peng"], lime: true },
   { id: "bandung", cat: "juice", name: "Bandung", gloss: "Rose syrup", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
   // Anything Else
   // kind means the person types which drink it is. `say` turns what they typed into the call.
@@ -247,6 +249,7 @@ const STRENGTH = { "": { say: "", label: "Normal", gloss: "" }, gao: { say: "Gao
 const SUGAR = { "": { say: "", label: "Normal", gloss: "" }, siewdai: { say: "Siew Dai", label: "Siew Dai", gloss: "less sweet" }, kosong: { say: "Kosong", label: "Kosong", gloss: "no sugar" }, gadai: { say: "Ga Dai", label: "Ga Dai", gloss: "extra sweet" } };
 const TEMP = { hot: { say: "", label: "Hot", gloss: "hot" }, peng: { say: "Peng", label: "Peng", gloss: "iced" } };
 const DINO = { "": { label: "Regular" }, dino: { label: "Dinosaur" } };
+const LIME = { "": { label: "No lime" }, lime: { label: "Add lime" } };
 const OPT_HELP = { dino: { dino: "powder on top" }, milk: { "": "default", c: "evaporated", o: "none", kosong: "no milk or sugar" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
 const NAME_MAX = 30;
 const NOTE_MAX = 40;
@@ -256,7 +259,7 @@ const STORE_KEY = "coffeerun.order";
 const BY_ID = new Map(BASES.map(b => [b.id, b]));
 
 let order = [];            // drinks in the order they were added: { name, base, milk, strength, sugar, temp, note }
-let draft = { base: "kopi", dino: "", milk: "", strength: "", sugar: "", temp: "hot" };
+let draft = { base: "kopi", dino: "", lime: "", milk: "", strength: "", sugar: "", temp: "hot" };
 const $ = id => document.getElementById(id);
 
 function notice(text, isErr) {
@@ -279,6 +282,7 @@ function normalize(d) {
     name: text(d.name, NAME_MAX),
     base: b.id,
     dino: b.dino ? pick(d.dino, Object.keys(DINO)) : "",
+    lime: b.lime ? pick(d.lime, Object.keys(LIME)) : "",
     milk: b.milk.length ? pick(d.milk, b.milk) : "",
     strength: b.strength ? pick(d.strength, Object.keys(STRENGTH)) : "",
     sugar: b.sugar ? pick(d.sugar, Object.keys(SUGAR)) : "",
@@ -296,11 +300,11 @@ function normalize(d) {
 }
 
 // What you say at the counter: base, milk, strength, sugar, then iced. "Kopi C Gao Siew Dai Peng".
-// Dinosaur follows the base ("Milo Dinosaur Siew Dai") and needs no "Peng".
+// Dinosaur follows the base ("Milo Dinosaur Siew Dai") and needs no "Peng". So does lime ("Sugarcane Lime").
 function callOf(d) {
   const b = BY_ID.get(d.base);
   if (b.kind) return d.kind ? b.kind.say(d.kind) : b.name;
-  const parts = [b.name, d.dino ? "Dinosaur" : "", MILK[d.milk].say, STRENGTH[d.strength].say, SUGAR[d.sugar].say];
+  const parts = [b.name, d.dino ? "Dinosaur" : "", d.lime ? "Lime" : "", MILK[d.milk].say, STRENGTH[d.strength].say, SUGAR[d.sugar].say];
   if (b.temps.length > 1 && !d.dino) parts.push(TEMP[d.temp].say);
   return parts.filter(Boolean).join(" ");
 }
@@ -310,6 +314,7 @@ function glossOf(d) {
   if (b.kind) return b.kind.gloss;
   const parts = [b.gloss];
   if (d.dino) parts.push("extra powder on top");
+  if (d.lime) parts.push("with lime");
   if (b.milk.length) parts.push(MILK[d.milk].gloss);
   if (d.strength) parts.push(STRENGTH[d.strength].gloss);
   if (d.sugar) parts.push(SUGAR[d.sugar].gloss);
@@ -365,6 +370,7 @@ function buildBuilder() {
   for (const [k, v] of Object.entries(SUGAR)) $("sugar").appendChild(optButton("sugar", k, v.label));
   for (const [k, v] of Object.entries(TEMP)) $("temp").appendChild(optButton("temp", k, v.label));
   for (const [k, v] of Object.entries(DINO)) $("dino").appendChild(optButton("dino", k, v.label));
+  for (const [k, v] of Object.entries(LIME)) $("lime").appendChild(optButton("lime", k, v.label));
   $("addBtn").addEventListener("click", addDrink);
   $("note").addEventListener("keydown", e => { if (e.key === "Enter") addDrink(); });
   $("name").addEventListener("input", () => $("name").removeAttribute("aria-invalid"));
@@ -385,6 +391,7 @@ function renderBuilder() {
   $("sugarRow").hidden = !b.sugar || draft.milk === "kosong";
   $("tempRow").hidden = b.temps.length < 2 || !!draft.dino;
   $("dinoRow").hidden = !b.dino;
+  $("limeRow").hidden = !b.lime;
   $("kindRow").hidden = !b.kind;
   if (b.kind) { $("kindLabel").textContent = b.kind.label; $("kind").placeholder = b.kind.placeholder; }
   const kosongBlocked = b.milk.length > 0 && draft.milk === "";
