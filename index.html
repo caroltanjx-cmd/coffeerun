@@ -155,6 +155,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
       <div id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
       <div id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, pick C or O.</p></div>
       <div id="tempRow"><p class="label">Hot or iced</p><div class="opts" id="temp"></div></div>
+      <div id="kindRow"><label class="label" for="kind">Which canned drink</label><input class="field" id="kind" maxlength="30" placeholder="e.g. 100 Plus, Coke Zero" autocomplete="off"></div>
 
       <div class="preview">
         <div>
@@ -208,6 +209,8 @@ const BASES = [
   { id: "barley", name: "Barley", gloss: "Barley water", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
   { id: "lime", name: "Lime Juice", gloss: "Calamansi lime", milk: [], strength: false, sugar: true, temps: ["peng"] },
   { id: "chrysanthemum", name: "Chrysanthemum", gloss: "Flower tea", milk: [], strength: false, sugar: true, temps: ["hot", "peng"] },
+  // kind: true means the person types which drink it is, e.g. "100 Plus".
+  { id: "canned", name: "Canned Drink", gloss: "Type which one", milk: [], strength: false, sugar: false, temps: ["peng"], kind: true },
 ];
 const MILK = { "": { say: "", label: "Condensed", gloss: "condensed milk" }, c: { say: "C", label: "C", gloss: "evaporated milk" }, o: { say: "O", label: "O", gloss: "no milk" } };
 const STRENGTH = { "": { say: "", label: "Normal", gloss: "" }, gao: { say: "Gao", label: "Gao", gloss: "strong" }, po: { say: "Po", label: "Po", gloss: "weak" } };
@@ -216,6 +219,7 @@ const TEMP = { hot: { say: "", label: "Hot", gloss: "hot" }, peng: { say: "Peng"
 const OPT_HELP = { milk: { "": "default", c: "evaporated", o: "none" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
 const NAME_MAX = 30;
 const NOTE_MAX = 40;
+const KIND_MAX = 30;
 const MAX_DRINKS = 60;
 const STORE_KEY = "coffeerun.order";
 const BY_ID = new Map(BASES.map(b => [b.id, b]));
@@ -247,6 +251,7 @@ function normalize(d) {
     strength: b.strength ? pick(d.strength, Object.keys(STRENGTH)) : "",
     sugar: b.sugar ? pick(d.sugar, Object.keys(SUGAR)) : "",
     temp: pick(d.temp, b.temps),
+    kind: b.kind ? text(d.kind, KIND_MAX) : "",
     note: text(d.note, NOTE_MAX),
   };
   // Condensed milk is sweet, so "no sugar" only exists with C or O.
@@ -257,6 +262,7 @@ function normalize(d) {
 // What you say at the counter: base, milk, strength, sugar, then iced. "Kopi C Gao Siew Dai Peng".
 function callOf(d) {
   const b = BY_ID.get(d.base);
+  if (b.kind) return d.kind ? d.kind + " (can)" : b.name;
   const parts = [b.name, MILK[d.milk].say, STRENGTH[d.strength].say, SUGAR[d.sugar].say];
   if (b.temps.length > 1) parts.push(TEMP[d.temp].say);
   return parts.filter(Boolean).join(" ");
@@ -264,6 +270,7 @@ function callOf(d) {
 
 function glossOf(d) {
   const b = BY_ID.get(d.base);
+  if (b.kind) return "Canned drink, as it comes";
   const parts = [b.gloss];
   if (b.milk.length) parts.push(MILK[d.milk].gloss);
   if (d.strength) parts.push(STRENGTH[d.strength].gloss);
@@ -277,7 +284,7 @@ function glossOf(d) {
 function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
-    if (Array.isArray(raw)) order = raw.map(normalize).filter(d => d && d.name).slice(0, MAX_DRINKS);
+    if (Array.isArray(raw)) order = raw.map(normalize).filter(d => d && d.name && (d.kind || !BY_ID.get(d.base).kind)).slice(0, MAX_DRINKS);
   } catch (e) { order = []; }
 }
 
@@ -304,7 +311,7 @@ function buildBuilder() {
     const name = document.createElement("b"); name.textContent = b.name;
     const g = document.createElement("span"); g.textContent = b.gloss;
     btn.append(name, g);
-    btn.addEventListener("click", () => { draft = normalize({ ...draft, base: b.id }); renderBuilder(); });
+    btn.addEventListener("click", () => { draft = normalize({ ...draft, base: b.id, kind: $("kind").value }); renderBuilder(); });
     $("bases").appendChild(btn);
   }
   for (const [k, v] of Object.entries(MILK)) $("milk").appendChild(optButton("milk", k, v.label));
@@ -314,6 +321,13 @@ function buildBuilder() {
   $("addBtn").addEventListener("click", addDrink);
   $("note").addEventListener("keydown", e => { if (e.key === "Enter") addDrink(); });
   $("name").addEventListener("input", () => $("name").removeAttribute("aria-invalid"));
+  $("kind").addEventListener("input", () => {
+    $("kind").removeAttribute("aria-invalid");
+    draft.kind = $("kind").value;
+    draft = normalize(draft);
+    renderBuilder();
+  });
+  $("kind").addEventListener("keydown", e => { if (e.key === "Enter") addDrink(); });
 }
 
 function renderBuilder() {
@@ -323,6 +337,7 @@ function renderBuilder() {
   $("strengthRow").hidden = !b.strength;
   $("sugarRow").hidden = !b.sugar;
   $("tempRow").hidden = b.temps.length < 2;
+  $("kindRow").hidden = !b.kind;
   const kosongBlocked = b.milk.length > 0 && draft.milk === "";
   document.querySelectorAll(".opt").forEach(btn => {
     const { group, value } = btn.dataset;
@@ -347,10 +362,17 @@ function addDrink() {
     return;
   }
   if (order.length >= MAX_DRINKS) { notice(`The order is full at ${MAX_DRINKS} drinks.`, true); return; }
-  const d = normalize({ ...draft, name, note: $("note").value });
+  const d = normalize({ ...draft, name, kind: $("kind").value, note: $("note").value });
+  if (BY_ID.get(d.base).kind && !d.kind) {
+    $("kind").setAttribute("aria-invalid", "true");
+    notice("Type which canned drink it is, e.g. 100 Plus.", true);
+    $("kind").focus();
+    return;
+  }
   order.push(d);
   store();
-  $("name").value = ""; $("note").value = "";
+  $("name").value = ""; $("kind").value = ""; $("note").value = "";
+  draft.kind = "";
   notice(`Added ${callOf(d)} for ${d.name}.`);
   render();
   $("name").focus();
@@ -369,7 +391,7 @@ function removeDrink(i) {
 function consolidate() {
   const lines = new Map();
   for (const d of order) {
-    const key = callOf(d) + "\u0000" + d.note.toLowerCase();
+    const key = callOf(d).toLowerCase() + "\u0000" + d.note.toLowerCase();
     const line = lines.get(key) || { call: callOf(d), note: d.note, base: d.base, qty: 0 };
     line.qty++;
     lines.set(key, line);

@@ -27,3 +27,5 @@ The `BASES` array at the top of the script lists the drinks and which options ap
 | Peng | Iced |
 
 Kosong is turned off for drinks with condensed milk, because condensed milk is already sweet.
+
+**Canned Drink** has no options. Instead, the person taking orders types which one it is (up to 30 characters, e.g. "100 Plus"), and it shows on the order as "100 Plus (can)". Names that differ only in capitals are counted together.
