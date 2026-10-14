@@ -15,7 +15,7 @@ Saved drinks are read back as untrusted: unknown drinks are dropped, options are
 
 ## Drink vocabulary
 
-The `BASES` array at the top of the script lists the drinks and which options apply to each. A drink is said in this order: base, milk, strength, sugar, iced.
+The `CATEGORIES` and `BASES` arrays at the top of the script list the drink groups, the drinks in menu order, and which options apply to each. The relay lists drinks in the same order. A drink is said in this order: base, milk, strength, sugar, iced.
 
 | Term | Meaning |
 | --- | --- |
