@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kopi Run – drink orders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f0;--surface:#fff;--ink:#1b2623;--mute:#5d6b67;--line:#d5dcda;--teal:#14584b;--teal2:#1d6e5f;--on:#fff;--red:#c9362b;--chip:#e3e9e7;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111917;--surface:#1b2623;--ink:#e8eeec;--mute:#9aaaa5;--line:#2e3d39;--teal:#5cc2ac;--teal2:#4aa893;--on:#0d1b17;--red:#ff7b6e;--chip:#26332f}}
+:root[data-theme="dark"]{--bg:#111917;--surface:#1b2623;--ink:#e8eeec;--mute:#9aaaa5;--line:#2e3d39;--teal:#5cc2ac;--teal2:#4aa893;--on:#0d1b17;--red:#ff7b6e;--chip:#26332f}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif}
+.tiles{height:14px;background:repeating-conic-gradient(var(--teal) 0 25%,var(--teal2) 0 50%) 0 0/14px 14px}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 48px}
+h1{font-size:2rem;font-weight:800;margin:8px 0 2px;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 16px}
+.tabs{display:flex;gap:4px;background:var(--chip);padding:4px;border-radius:12px;margin-bottom:16px}
+.tabs button{flex:1;border:0;background:none;color:var(--ink);font:inherit;font-weight:600;padding:10px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+label,.lab{display:block;font-weight:600;margin:14px 0 6px}
+label:first-child{margin-top:0}
+input[type=text]{width:100%;font:inherit;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+input:focus-visible,button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:8px 13px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--teal);border-color:var(--teal);color:var(--on);font-weight:600}
+.hint{color:var(--mute);font-size:.85rem;margin-top:6px}
+.preview{margin-top:16px;padding:12px;border-radius:10px;background:var(--chip);font-weight:800;font-size:1.15rem}
+.row{display:flex;gap:8px;margin-top:14px}
+.btn{font:inherit;font-weight:600;border:1.5px solid var(--teal);background:none;color:var(--teal);padding:11px 16px;border-radius:10px;cursor:pointer}
+.btn.pri{background:var(--teal);color:var(--on)}
+.btn.pri.grow{flex:1}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.sm{padding:6px 11px;font-size:.9rem}
+.order{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.order:first-child{border-top:0}
+.order.editing{background:var(--chip);margin:0 -16px;padding:12px 16px}
+.order .who{font-weight:800}
+.order .what{color:var(--mute)}
+.order>div:first-child{flex:1;min-width:0}
+.tag{display:inline-block;font-size:.78rem;font-weight:600;background:var(--chip);border-radius:6px;padding:1px 7px;margin-left:6px}
+.group{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line)}
+.group:first-child{border-top:0}
+.count{font-size:2.4rem;font-weight:800;line-height:1;min-width:2.2ch;color:var(--teal)}
+.group h3{margin:0 0 6px;font-size:1.15rem}
+.names{display:flex;flex-wrap:wrap;gap:6px}
+.names button{border:0;background:var(--chip);color:var(--ink);font:inherit;font-size:.9rem;padding:3px 10px;border-radius:999px;cursor:pointer}
+.total{font-weight:800;font-size:1.1rem;margin-bottom:4px}
+.empty{color:var(--mute);text-align:center;padding:24px 8px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="tiles"></div>
+<div class="wrap">
+  <h1>Kopi Run</h1>
+  <p class="sub">Capture everyone's drinks, then read the summary to the uncle.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="t-orders" aria-selected="true" data-tab="orders">Orders</button>
+    <button role="tab" id="t-summary" aria-selected="false" data-tab="summary">Summary</button>
+  </div>
+  <section id="orders">
+    <div class="card" id="form"></div>
+    <div class="card" id="list"></div>
+  </section>
+  <section id="summary" hidden>
+    <div class="card" id="sum"></div>
+  </section>
+</div>
+<div id="toast" role="status"></div>
+<script>
+const BASES=["Kopi","Kopi O","Kopi C","Teh","Teh O","Teh C","Milo","Yuan Yang","Horlicks","Bandung","Chinese Tea","Barley","Lime Juice","Soya Bean"];
+const blank=()=>({name:"",base:"Kopi",custom:"",iced:false,sweet:"",strength:"",takeaway:false});
+const S={orders:[],tab:"orders",editId:null,d:blank(),clearArm:false};
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+try{S.orders=JSON.parse(localStorage.getItem("kopirun-orders")||"[]")}catch(e){S.orders=[]}
+const save=()=>{try{localStorage.setItem("kopirun-orders",JSON.stringify(S.orders))}catch(e){}};
+const baseName=o=>o.base==="Other"?(o.custom||"Drink"):o.base;
+const label=o=>[baseName(o)+(o.iced?" Peng":""),o.sweet,o.strength].filter(Boolean).join(" ");
+let tt;const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),1800)};
+
+function seg(title,key,opts,hint){
+  return `<div class="lab">${title}</div><div class="chips">`+opts.map(([t,v])=>
+    `<button type="button" class="chip" aria-pressed="${String(S.d[key])===String(v)}" data-set="${key}" data-v="${esc(v)}">${t}</button>`).join("")+`</div>`+(hint?`<div class="hint">${hint}</div>`:"");
+}
+function renderForm(){
+  const d=S.d,names=[...new Set(S.orders.map(o=>o.name))];
+  $("#form").innerHTML=`
+  <label for="name">Who is it for?</label>
+  <input type="text" id="name" list="names" autocomplete="off" value="${esc(d.name)}" placeholder="e.g. Ah Seng">
+  <datalist id="names">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+  <div class="lab">Drink</div>
+  <div class="chips">${[...BASES,"Other"].map(b=>`<button type="button" class="chip" aria-pressed="${d.base===b}" data-set="base" data-v="${esc(b)}">${b}</button>`).join("")}</div>
+  ${d.base==="Other"?`<input type="text" id="custom" style="margin-top:8px" value="${esc(d.custom)}" placeholder="Type the drink name">`:""}
+  <div class="hint">Kopi = with condensed milk · O = no milk · C = evaporated milk</div>
+  ${seg("Temperature","iced",[["Hot",false],["Iced (Peng)",true]])}
+  ${seg("Sweetness","sweet",[["Normal",""],["Siew Dai","Siew Dai"],["Gah Dai","Gah Dai"],["Kosong","Kosong"]],"Siew Dai = less sweet · Gah Dai = more sweet · Kosong = no sugar")}
+  ${seg("Strength","strength",[["Normal",""],["Po (lighter)","Po"],["Gau (stronger)","Gau"]])}
+  ${seg("Serve","takeaway",[["Drink here",false],["Takeaway (Da bao)",true]])}
+  <div class="preview" id="prev"></div>
+  <div class="row">
+    <button type="button" class="btn pri grow" data-act="submit">${S.editId?"Save changes":"Add order"}</button>
+    ${S.editId?`<button type="button" class="btn" data-act="cancel">Cancel</button>`:""}
+  </div>`;
+  prev();
+}
+const prev=()=>{const p=$("#prev");if(p)p.textContent=label(S.d)+(S.d.takeaway?" (takeaway)":"")};
+
+function renderList(){
+  const L=$("#list");
+  if(!S.orders.length){L.innerHTML=`<div class="empty">No orders yet. Add the first drink above.</div>`;return}
+  L.innerHTML=`<div class="total">${S.orders.length} drink${S.orders.length>1?"s":""} so far</div>`+S.orders.map(o=>`
+  <div class="order${o.id===S.editId?" editing":""}">
+    <div><div class="who">${esc(o.name)}</div><div class="what">${esc(label(o))}${o.takeaway?`<span class="tag">Takeaway</span>`:""}</div></div>
+    <button class="btn sm" data-edit="${o.id}">Edit</button>
+    <button class="btn sm danger" data-del="${o.id}" aria-label="Delete ${esc(o.name)}'s order">Delete</button>
+  </div>`).join("")+`<div class="row"><button class="btn danger" data-act="clear">${S.clearArm?"Tap again to clear all":"Clear all orders"}</button></div>`;
+}
+function groups(){
+  const m=new Map();
+  S.orders.forEach(o=>{const k=label(o)+"|"+o.takeaway;if(!m.has(k))m.set(k,{label:label(o),takeaway:o.takeaway,list:[]});m.get(k).list.push(o)});
+  return [...m.values()].sort((a,b)=>b.list.length-a.list.length||a.label.localeCompare(b.label));
+}
+function renderSum(){
+  const G=groups(),box=$("#sum");
+  if(!G.length){box.innerHTML=`<div class="empty">Nothing to order yet. Capture some drinks on the Orders tab.</div>`;return}
+  box.innerHTML=`<div class="total">${S.orders.length} drinks, ${G.length} different</div>`+G.map(g=>`
+  <div class="group"><div class="count">${g.list.length}</div><div>
+    <h3>${esc(g.label)}${g.takeaway?`<span class="tag">Takeaway</span>`:""}</h3>
+    <div class="names">${g.list.map(o=>`<button data-edit="${o.id}" title="Edit ${esc(o.name)}'s order">${esc(o.name)}</button>`).join("")}</div>
+  </div></div>`).join("")+`<div class="row"><button class="btn pri grow" data-act="copy">Copy order list</button></div>`;
+}
+function view(){
+  ["orders","summary"].forEach(t=>{$("#"+t).hidden=S.tab!==t;$("#t-"+t).setAttribute("aria-selected",S.tab===t)});
+  $("#t-summary").textContent="Summary"+(S.orders.length?` (${S.orders.length})`:"");
+  renderList();renderSum();
+}
+function reset(){S.editId=null;S.d=blank();renderForm();view()}
+function submit(){
+  const d=S.d;d.name=d.name.trim();
+  if(!d.name){toast("Add a name first");$("#name").focus();return}
+  if(d.base==="Other"&&!d.custom.trim()){toast("Type the drink name");return}
+  if(S.editId){const i=S.orders.findIndex(o=>o.id===S.editId);S.orders[i]={...d,id:S.editId};toast("Changes saved")}
+  else{S.orders.push({...d,id:Date.now()+Math.random()});toast("Order added")}
+  save();reset();if(!S.editId)$("#name").focus();
+}
+function edit(id){
+  const o=S.orders.find(x=>x.id==id);if(!o)return;
+  S.editId=o.id;S.d={...blank(),...o};S.tab="orders";renderForm();view();
+  $("#form").scrollIntoView({behavior:"smooth",block:"start"});
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.tab){S.tab=b.dataset.tab;view();return}
+  if(b.dataset.set){let v=b.dataset.v;v=v==="true"?true:v==="false"?false:v;S.d[b.dataset.set]=v;renderForm();return}
+  if(b.dataset.edit){edit(b.dataset.edit);return}
+  if(b.dataset.del){S.orders=S.orders.filter(o=>o.id!=b.dataset.del);if(S.editId==b.dataset.del){S.editId=null;S.d=blank();renderForm()}save();view();toast("Order deleted");return}
+  const a=b.dataset.act;
+  if(a==="submit")submit();
+  else if(a==="cancel")reset();
+  else if(a==="clear"){
+    if(S.clearArm){S.orders=[];S.clearArm=false;save();reset();toast("All orders cleared")}
+    else{S.clearArm=true;renderList();setTimeout(()=>{S.clearArm=false;renderList()},3000)}
+  }else if(a==="copy"){
+    const txt=groups().map(g=>`${g.list.length}x ${g.label}${g.takeaway?" (takeaway)":""} - ${g.list.map(o=>o.name).join(", ")}`).join("\n");
+    const ok=()=>toast("Order list copied");
+    const fb=()=>{try{const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();ok()}catch(_){toast("Copy not available")}};
+    try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(_){fb()}
+  }
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="name"){S.d.name=e.target.value}
+  if(e.target.id==="custom"){S.d.custom=e.target.value;prev()}
+});
+document.addEventListener("change",e=>{
+  if(e.target.id!=="name"||S.editId)return;
+  const last=[...S.orders].reverse().find(o=>o.name.toLowerCase()===e.target.value.trim().toLowerCase());
+  if(last){const n=e.target.value.trim();S.d={...blank(),...last,name:n};renderForm();toast("Filled in their last drink")}
+});
+renderForm();view();
+</script>
+</body>
+</html>
