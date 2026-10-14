@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: kopitiam signboard header, then two columns (order builder | the relay slip), then who-ordered-what for collecting money. */
+/* Layout: kopitiam signboard header, then two columns (drink builder | the relay slip), then who-ordered-what for collecting money. */
 :root {
   --bg: #eef4f0;
   --surface: #ffffff;
@@ -46,15 +46,10 @@ header { display: flex; flex-wrap: wrap; justify-content: space-between; align-i
 .sign { background: var(--green); color: var(--green-ink); border-radius: 6px; padding: 8px 18px 6px; display: inline-flex; align-items: baseline; gap: 12px; }
 h1 { font-family: var(--display); font-weight: 900; font-size: clamp(36px, 8vw, 56px); line-height: 1; letter-spacing: .02em; text-transform: uppercase; margin: 0; }
 .sign small { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
-.who { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px 6px 6px; min-width: 0; }
-.who img { width: 28px; height: 28px; border-radius: 50%; flex: none; }
-.who span { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; border-block: 1px solid var(--line); padding-block: 12px; }
-.pill { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
-.pill.closed { background: var(--red); color: var(--red-ink); }
 .status .lead { flex: 1 1 240px; min-width: 0; font-weight: 600; }
-.owner { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; }
+.clear { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; }
 
 .btn { font: inherit; font-weight: 600; font-size: 14px; padding: 7px 14px; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 .btn:hover:not(:disabled) { border-color: var(--ink); }
@@ -62,15 +57,17 @@ h1 { font-family: var(--display); font-weight: 900; font-size: clamp(36px, 8vw, 
 .btn:disabled { opacity: .5; cursor: default; }
 .btn.go { background: var(--green); border-color: var(--green); color: var(--green-ink); }
 .btn.danger { background: var(--red); border-color: var(--red); color: var(--red-ink); }
+.btn.small { font-size: 13px; padding: 3px 10px; }
 .notice { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--green-soft); font-size: 14px; }
 .notice.err { background: var(--surface); border: 1px solid var(--red); color: var(--red); }
 
 .cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 @media (max-width: 760px) { .cols { grid-template-columns: minmax(0, 1fr); } }
 h2 { font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1.1; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 12px; }
-.label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.label { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; display: block; }
 
 .builder { display: grid; gap: 16px; }
+.field { width: 100%; font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 .bases { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
 .base, .opt { appearance: none; font: inherit; color: var(--ink); cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; text-align: left; }
 .base { padding: 8px 12px; display: grid; }
@@ -79,11 +76,10 @@ h2 { font-family: var(--display); font-weight: 800; font-size: 28px; line-height
 .base[aria-pressed="true"], .opt[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
 .base[aria-pressed="true"] span { color: inherit; opacity: .8; }
 .base:hover:not(:disabled), .opt:hover:not(:disabled) { border-color: var(--ink); }
-.base:disabled, .opt:disabled { cursor: default; opacity: .45; }
+.opt:disabled { cursor: default; opacity: .45; }
 .opts { display: flex; flex-wrap: wrap; gap: 6px; }
 .opt { padding: 5px 12px; font-size: 14px; display: inline-flex; gap: 6px; align-items: baseline; }
 .opt small { font-size: 11px; opacity: .75; }
-.row[hidden] { display: none; }
 .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
 
 .preview { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; }
@@ -91,11 +87,6 @@ h2 { font-family: var(--display); font-weight: 800; font-size: 28px; line-height
 .gloss { color: var(--muted); font-size: 14px; }
 .addrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .addrow input { flex: 1 1 180px; min-width: 0; font: inherit; font-size: 14px; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
-.mine { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.mine li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
-.mine li div { min-width: 0; }
-.mine li b { font-weight: 700; }
-.mine li em { font-style: normal; color: var(--muted); font-size: 13px; }
 
 .slip { background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--red); border-radius: 4px 4px 10px 10px; padding: 16px; display: grid; gap: 12px; }
 .slip .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
@@ -109,12 +100,14 @@ h2 { font-family: var(--display); font-weight: 800; font-size: 28px; line-height
 textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); font-size: 13px; padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
 
 .roll { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-.roll li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line); }
-.roll img { width: 32px; height: 32px; border-radius: 50%; }
-.roll .person { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.roll .drinks { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
-.chip { font-size: 13px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
-@media (max-width: 480px) { .roll li { grid-template-columns: 32px minmax(0, 1fr); } .roll .drinks { grid-column: 2; justify-content: flex-start; } }
+.roll > li { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr); gap: 8px 16px; align-items: start; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.roll .person { font-weight: 700; overflow-wrap: anywhere; }
+.roll .person small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+.roll .drinks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.roll .drinks li { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.roll .drinks span { min-width: 0; overflow-wrap: anywhere; }
+.roll .drinks em { font-style: normal; color: var(--muted); font-size: 13px; }
+@media (max-width: 480px) { .roll > li { grid-template-columns: minmax(0, 1fr); } }
 
 .uncle { position: fixed; inset: 0; z-index: 10; background: var(--green); color: var(--green-ink); overflow: auto;
   padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px); }
@@ -131,17 +124,14 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
 <div class="wrap">
   <header>
     <div class="sign"><h1>Coffee Run</h1><small>Kopi · Teh · Tah Pau</small></div>
-    <div class="who" id="who" hidden><img id="whoImg" alt="" referrerpolicy="no-referrer"><span id="whoName"></span></div>
   </header>
 
   <div class="status">
-    <span class="pill" id="pill">Loading</span>
-    <div class="lead" id="lead">Loading orders…</div>
-    <div class="owner" id="owner" hidden>
-      <button type="button" class="btn" id="closeBtn">Close orders</button>
+    <div class="lead" id="lead">No drinks yet.</div>
+    <div class="clear" id="clear">
       <button type="button" class="btn" id="newBtn">Start a new run</button>
-      <span id="newConfirm" hidden>Clear every order for everyone?
-        <button type="button" class="btn danger" id="newYes">Clear orders</button>
+      <span id="newConfirm" hidden>Clear every drink on this order?
+        <button type="button" class="btn danger" id="newYes">Clear order</button>
         <button type="button" class="btn" id="newNo">Cancel</button>
       </span>
     </div>
@@ -151,15 +141,20 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
 
   <div class="cols">
     <section class="builder" aria-labelledby="orderH">
-      <h2 id="orderH">Your order</h2>
+      <h2 id="orderH">Add a drink</h2>
+      <div>
+        <label class="label" for="name">Who's it for</label>
+        <input class="field" id="name" maxlength="30" placeholder="Name, e.g. Wei Ling" autocomplete="off" list="names">
+        <datalist id="names"></datalist>
+      </div>
       <div>
         <p class="label">Drink</p>
         <div class="bases" id="bases"></div>
       </div>
-      <div class="row" id="milkRow"><p class="label">Milk</p><div class="opts" id="milk"></div></div>
-      <div class="row" id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
-      <div class="row" id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, pick C or O.</p></div>
-      <div class="row" id="tempRow"><p class="label">Hot or iced</p><div class="opts" id="temp"></div></div>
+      <div id="milkRow"><p class="label">Milk</p><div class="opts" id="milk"></div></div>
+      <div id="strengthRow"><p class="label">Strength</p><div class="opts" id="strength"></div></div>
+      <div id="sugarRow"><p class="label">Sugar</p><div class="opts" id="sugar"></div><p class="hint" id="sugarHint" hidden>Condensed milk is already sweet. For no sugar, pick C or O.</p></div>
+      <div id="tempRow"><p class="label">Hot or iced</p><div class="opts" id="temp"></div></div>
 
       <div class="preview">
         <div>
@@ -169,11 +164,8 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
         </div>
         <div class="addrow">
           <input id="note" maxlength="40" placeholder="Note, e.g. less ice" aria-label="Note for this drink" autocomplete="off">
-          <button type="button" class="btn go" id="addBtn">Add to my order</button>
+          <button type="button" class="btn go" id="addBtn">Add to order</button>
         </div>
-        <p class="label" id="mineLabel">Your drinks (up to 3)</p>
-        <ul class="mine" id="mine"></ul>
-        <p class="hint" id="mineEmpty">Nothing yet. Build a drink above and add it.</p>
       </div>
     </section>
 
@@ -182,7 +174,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
       <div class="slip">
         <div class="head"><span id="slipCount">0 drinks</span><span>All tah pau</span></div>
         <ol class="lines" id="lines"></ol>
-        <p class="empty" id="linesEmpty">No orders yet. The combined order shows up here as people add drinks.</p>
+        <p class="empty" id="linesEmpty">No drinks yet. Add each person's drink and the combined order builds up here.</p>
         <div class="actions">
           <button type="button" class="btn go" id="uncleBtn">Show the uncle</button>
           <button type="button" class="btn" id="copyBtn">Copy order</button>
@@ -194,7 +186,7 @@ textarea.copybox { width: 100%; min-height: 140px; font-family: var(--mono); fon
 
   <section aria-labelledby="rollH">
     <h2 id="rollH">Who ordered what</h2>
-    <p class="empty" id="rollEmpty">Nobody has ordered yet.</p>
+    <p class="empty" id="rollEmpty">Nobody's on the order yet.</p>
     <ul class="roll" id="roll" hidden></ul>
   </section>
 </div>
@@ -222,18 +214,14 @@ const STRENGTH = { "": { say: "", label: "Normal", gloss: "" }, gao: { say: "Gao
 const SUGAR = { "": { say: "", label: "Normal", gloss: "" }, siewdai: { say: "Siew Dai", label: "Siew Dai", gloss: "less sweet" }, kosong: { say: "Kosong", label: "Kosong", gloss: "no sugar" }, gadai: { say: "Ga Dai", label: "Ga Dai", gloss: "extra sweet" } };
 const TEMP = { hot: { say: "", label: "Hot", gloss: "hot" }, peng: { say: "Peng", label: "Peng", gloss: "iced" } };
 const OPT_HELP = { milk: { "": "default", c: "evaporated", o: "none" }, strength: { gao: "strong", po: "weak" }, sugar: { siewdai: "less", kosong: "none", gadai: "more" }, temp: { peng: "iced" } };
-const MAX = 3;
+const NAME_MAX = 30;
 const NOTE_MAX = 40;
+const MAX_DRINKS = 60;
+const STORE_KEY = "coffeerun.order";
 const BY_ID = new Map(BASES.map(b => [b.id, b]));
 
-let db = null, user = null, myId = null, owner = false;
-let orders = new Map();    // userId -> drinks[]
-let closed = false;
-let loaded = false, readOnly = false, unavailable = false;
-let writeChain = Promise.resolve();
-let pending = 0, saved = [], writeFailed = false, canWrite = null;
+let order = [];            // drinks in the order they were added: { name, base, milk, strength, sugar, temp, note }
 let draft = { base: "kopi", milk: "", strength: "", sugar: "", temp: "hot" };
-const VIEW_ONLY = "You can see the order but not add to it. Ask the owner for Contributor access.";
 const $ = id => document.getElementById(id);
 
 function notice(text, isErr) {
@@ -243,42 +231,23 @@ function notice(text, isErr) {
   n.hidden = !text;
 }
 
-const NO_AVATAR = "data:image/svg+xml," + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#91a69b"/></svg>');
-
-// Avatars come from this page's own origin or as data: images. Load nothing else.
-function safeAvatar(url) {
-  if (typeof url !== "string") return NO_AVATAR;
-  if (/^data:image\//i.test(url)) return url;
-  try {
-    const u = new URL(url, location.href);
-    if (u.protocol === "https:" && u.host === location.host) return u.href;
-  } catch (e) {}
-  return NO_AVATAR;
-}
-
-function avatarImg(url, alt) {
-  const img = document.createElement("img");
-  img.referrerPolicy = "no-referrer"; img.loading = "lazy";
-  img.src = safeAvatar(url); img.alt = alt;
-  return img;
-}
-
 // ---- Drinks ----
 
-// Force a drink into a valid shape for its base. Used on the draft and on every
-// order read from the db, since anyone can write anything to their own order.
+// Force a drink into a valid shape for its base. Used on the draft and on the saved order,
+// since browser storage can hold anything.
 function normalize(d) {
   const b = BY_ID.get(d && d.base);
   if (!b) return null;
   const pick = (v, ok) => (ok.includes(v) ? v : ok[0]);
+  const text = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
   const out = {
+    name: text(d.name, NAME_MAX),
     base: b.id,
     milk: b.milk.length ? pick(d.milk, b.milk) : "",
     strength: b.strength ? pick(d.strength, Object.keys(STRENGTH)) : "",
     sugar: b.sugar ? pick(d.sugar, Object.keys(SUGAR)) : "",
     temp: pick(d.temp, b.temps),
-    note: typeof d.note === "string" ? d.note.trim().slice(0, NOTE_MAX) : "",
+    note: text(d.note, NOTE_MAX),
   };
   // Condensed milk is sweet, so "no sugar" only exists with C or O.
   if (out.sugar === "kosong" && b.milk.length && out.milk === "") out.sugar = "siewdai";
@@ -303,9 +272,17 @@ function glossOf(d) {
   return parts.join(" · ");
 }
 
-function cleanDrinks(data) {
-  const raw = data && Array.isArray(data.drinks) ? data.drinks : [];
-  return raw.map(normalize).filter(Boolean).slice(0, MAX);
+// ---- Saving in this browser ----
+
+function load() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+    if (Array.isArray(raw)) order = raw.map(normalize).filter(d => d && d.name).slice(0, MAX_DRINKS);
+  } catch (e) { order = []; }
+}
+
+function store() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(order)); } catch (e) {}
 }
 
 // ---- Builder ----
@@ -336,17 +313,12 @@ function buildBuilder() {
   for (const [k, v] of Object.entries(TEMP)) $("temp").appendChild(optButton("temp", k, v.label));
   $("addBtn").addEventListener("click", addDrink);
   $("note").addEventListener("keydown", e => { if (e.key === "Enter") addDrink(); });
+  $("name").addEventListener("input", () => $("name").removeAttribute("aria-invalid"));
 }
-
-function canOrder() { return !!(db && myId) && !readOnly && (!closed || owner); }
 
 function renderBuilder() {
   const b = BY_ID.get(draft.base);
-  const off = !canOrder();
-  for (const btn of $("bases").children) {
-    btn.setAttribute("aria-pressed", String(btn.dataset.base === draft.base));
-    btn.disabled = off;
-  }
+  for (const btn of $("bases").children) btn.setAttribute("aria-pressed", String(btn.dataset.base === draft.base));
   $("milkRow").hidden = !b.milk.length;
   $("strengthRow").hidden = !b.strength;
   $("sugarRow").hidden = !b.sugar;
@@ -356,51 +328,47 @@ function renderBuilder() {
     const { group, value } = btn.dataset;
     btn.setAttribute("aria-pressed", String(draft[group] === value));
     btn.hidden = group === "milk" && !b.milk.includes(value);
-    btn.disabled = off || (group === "sugar" && value === "kosong" && kosongBlocked);
+    btn.disabled = group === "sugar" && value === "kosong" && kosongBlocked;
   });
   $("sugarHint").hidden = !kosongBlocked;
   $("call").textContent = callOf(draft);
   $("gloss").textContent = glossOf(draft);
-  const mine = orders.get(myId) || [];
-  $("addBtn").disabled = off || mine.length >= MAX;
-  $("note").disabled = off;
+  $("addBtn").disabled = order.length >= MAX_DRINKS;
 }
 
-function renderMine() {
-  const mine = orders.get(myId) || [];
-  const off = !canOrder();
-  $("mine").replaceChildren(...mine.map((d, i) => {
-    const li = document.createElement("li");
-    const text = document.createElement("div");
-    const b = document.createElement("b"); b.textContent = callOf(d);
-    text.append(b);
-    if (d.note) { const em = document.createElement("em"); em.textContent = " · " + d.note; text.append(em); }
-    const rm = document.createElement("button");
-    rm.type = "button"; rm.className = "btn"; rm.textContent = "Remove"; rm.disabled = off;
-    rm.setAttribute("aria-label", "Remove " + callOf(d));
-    rm.addEventListener("click", () => save(mine.filter((_, k) => k !== i)));
-    li.append(text, rm);
-    return li;
-  }));
-  $("mineEmpty").hidden = mine.length > 0;
-  $("mineLabel").textContent = `Your drinks (${mine.length} of ${MAX})`;
-}
-
+// Adds the drink for the named person, then clears the name so the next drink isn't
+// filed under the wrong person by mistake.
 function addDrink() {
-  if (!canOrder()) return;
-  const mine = orders.get(myId) || [];
-  if (mine.length >= MAX) { notice(`You can order up to ${MAX} drinks. Remove one to add another.`); return; }
-  const d = normalize({ ...draft, note: $("note").value });
-  $("note").value = "";
-  save([...mine, d]);
+  const name = $("name").value.trim();
+  if (!name) {
+    $("name").setAttribute("aria-invalid", "true");
+    notice("Type who the drink is for first.", true);
+    $("name").focus();
+    return;
+  }
+  if (order.length >= MAX_DRINKS) { notice(`The order is full at ${MAX_DRINKS} drinks.`, true); return; }
+  const d = normalize({ ...draft, name, note: $("note").value });
+  order.push(d);
+  store();
+  $("name").value = ""; $("note").value = "";
+  notice(`Added ${callOf(d)} for ${d.name}.`);
+  render();
+  $("name").focus();
+}
+
+function removeDrink(i) {
+  const [d] = order.splice(i, 1);
+  store();
+  notice(`Removed ${callOf(d)} for ${d.name}.`);
+  render();
 }
 
 // ---- Relay ----
 
 // Identical drinks with the same note collapse into one line, ordered the way the stall lists drinks.
-function consolidate(shown) {
+function consolidate() {
   const lines = new Map();
-  for (const drinks of shown.values()) for (const d of drinks) {
+  for (const d of order) {
     const key = callOf(d) + "\u0000" + d.note.toLowerCase();
     const line = lines.get(key) || { call: callOf(d), note: d.note, base: d.base, qty: 0 };
     line.qty++;
@@ -416,12 +384,11 @@ function relayText(lines, total) {
   return out.join("\n");
 }
 
-let lastLines = [], lastTotal = 0;
+let lastLines = [];
 
-function renderRelay(shown) {
-  const lines = consolidate(shown);
-  const total = lines.reduce((s, l) => s + l.qty, 0);
-  lastLines = lines; lastTotal = total;
+function renderRelay() {
+  const lines = consolidate();
+  lastLines = lines;
   $("lines").replaceChildren(...lines.map(l => {
     const li = document.createElement("li");
     const q = document.createElement("span"); q.className = "q"; q.textContent = l.qty + "×";
@@ -431,8 +398,9 @@ function renderRelay(shown) {
     return li;
   }));
   $("linesEmpty").hidden = lines.length > 0;
-  $("slipCount").textContent = `${total} ${total === 1 ? "drink" : "drinks"}`;
+  $("slipCount").textContent = drinksWord(order.length);
   $("uncleBtn").disabled = $("copyBtn").disabled = !lines.length;
+  $("copyBox").hidden = true;
   if (!$("uncle").hidden) renderUncle();
 }
 
@@ -444,7 +412,7 @@ function renderUncle() {
     if (l.note) { const s = document.createElement("small"); s.textContent = l.note; li.append(s); }
     return li;
   }));
-  $("uncleTotal").textContent = `${lastTotal} ${lastTotal === 1 ? "drink" : "drinks"} total`;
+  $("uncleTotal").textContent = `${drinksWord(order.length)} total`;
 }
 
 function setupRelay() {
@@ -457,7 +425,7 @@ function setupRelay() {
   $("uncleClose").addEventListener("click", closeUncle);
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("uncle").hidden) closeUncle(); });
   $("copyBtn").addEventListener("click", () => {
-    const text = relayText(lastLines, lastTotal);
+    const text = relayText(lastLines, order.length);
     const box = $("copyBox");
     const fallback = () => {
       box.value = text; box.hidden = false; box.focus(); box.select();
@@ -474,177 +442,72 @@ function setupRelay() {
 
 // ---- Page ----
 
-let renderSeq = 0;
+function drinksWord(n) { return `${n} ${n === 1 ? "drink" : "drinks"}`; }
 
-async function render() {
-  const seq = ++renderSeq;
-  const shown = new Map(orders);
-  const ids = [...shown.keys()];
-  renderBuilder();
-  renderMine();
-  renderRelay(shown);
-  renderStatus(shown);
-  const ps = user && ids.length ? await user.profiles(ids) : {};
-  if (seq !== renderSeq) return;
-  renderRoll(shown, {
-    nameOf: id => (id === myId ? "You" : (ps[id] && ps[id].name) || "Someone"),
-    avatarOf: id => ps[id] && ps[id].avatarUrl,
+// People in the order they first appear, matching names regardless of case.
+function byPerson() {
+  const people = new Map();
+  order.forEach((d, i) => {
+    const key = d.name.toLowerCase();
+    if (!people.has(key)) people.set(key, { name: d.name, items: [] });
+    people.get(key).items.push({ d, i });
   });
+  return [...people.values()];
 }
 
-function renderStatus(shown) {
-  const pill = $("pill");
-  pill.classList.toggle("closed", closed);
-  pill.textContent = !loaded ? "Loading" : unavailable ? "Offline" : closed ? "Closed" : "Taking orders";
-  const people = shown.size;
-  let lead;
-  if (!loaded) lead = "Loading orders…";
-  else if (unavailable) lead = "Orders aren't available.";
-  else if (closed) lead = `Orders are closed. The runner is getting ${people === 1 ? "1 person's" : people + " people's"} drinks.`;
-  else if (!people) lead = "Nobody has ordered yet. Add your drink.";
-  else lead = `${people} ${people === 1 ? "person has" : "people have"} ordered.`;
-  $("lead").textContent = lead;
-  $("closeBtn").textContent = closed ? "Reopen orders" : "Close orders";
-}
-
-function renderRoll(shown, { nameOf, avatarOf }) {
-  const order = [...shown.keys()].sort((a, b) => (a === myId ? -1 : b === myId ? 1 : nameOf(a).localeCompare(nameOf(b))));
-  $("roll").replaceChildren(...order.map(uid => {
+function render() {
+  const people = byPerson();
+  renderBuilder();
+  renderRelay();
+  $("lead").textContent = order.length
+    ? `${drinksWord(order.length)} for ${people.length} ${people.length === 1 ? "person" : "people"}.`
+    : "No drinks yet. Add the first one below.";
+  $("newBtn").disabled = !order.length;
+  $("names").replaceChildren(...people.map(p => { const o = document.createElement("option"); o.value = p.name; return o; }));
+  $("roll").replaceChildren(...people.map(p => {
     const li = document.createElement("li");
-    const person = document.createElement("div"); person.className = "person"; person.textContent = nameOf(uid);
-    const drinks = document.createElement("div"); drinks.className = "drinks";
-    for (const d of shown.get(uid)) {
-      const chip = document.createElement("span"); chip.className = "chip";
-      chip.textContent = callOf(d) + (d.note ? " · " + d.note : "");
-      drinks.appendChild(chip);
+    const person = document.createElement("div"); person.className = "person"; person.textContent = p.name;
+    const count = document.createElement("small"); count.textContent = drinksWord(p.items.length);
+    person.append(count);
+    const drinks = document.createElement("ul"); drinks.className = "drinks";
+    for (const { d, i } of p.items) {
+      const row = document.createElement("li");
+      const text = document.createElement("span"); text.textContent = callOf(d);
+      if (d.note) { const em = document.createElement("em"); em.textContent = " · " + d.note; text.append(em); }
+      const rm = document.createElement("button");
+      rm.type = "button"; rm.className = "btn small"; rm.textContent = "Remove";
+      rm.setAttribute("aria-label", `Remove ${callOf(d)} for ${d.name}`);
+      rm.addEventListener("click", () => removeDrink(i));
+      row.append(text, rm);
+      drinks.append(row);
     }
-    li.append(avatarImg(avatarOf(uid), ""), person, drinks);
+    li.append(person, drinks);
     return li;
   }));
-  $("roll").hidden = !order.length;
-  $("rollEmpty").hidden = !!order.length;
+  $("roll").hidden = !people.length;
+  $("rollEmpty").hidden = people.length > 0;
 }
 
-function setMine(drinks) {
-  if (drinks.length) orders.set(myId, drinks); else orders.delete(myId);
-}
-
-// Writes go out one at a time, so a fast add-then-remove lands in order.
-function save(next) {
-  if (!canOrder()) return;
-  notice("");
-  setMine(next);
-  render();
-  const ref = db.doc("orders/" + myId);
-  pending++;
-  writeChain = writeChain.then(async () => {
-    if (writeFailed) return;
-    try {
-      if (next.length) await ref.set({ drinks: next, at: Date.now() });
-      else await ref.delete();
-      saved = next;
-    } catch (e) {
-      writeFailed = true;
-      if (e && e.code === "invalid_argument" && canWrite === null) {
-        readOnly = true;
-        notice(VIEW_ONLY, true);
-      } else if (e && e.code === "quota_exceeded") {
-        notice("The order is full and can't take more drinks.", true);
-      } else {
-        notice("Your order didn't save, so it's back to what it was. Check your connection and try again.", true);
-      }
-    }
-  }).finally(() => {
-    if (--pending) return;
-    if (writeFailed) { writeFailed = false; setMine(saved); render(); }
-  });
-}
-
-function setupOwner() {
-  $("owner").hidden = false;
-  $("closeBtn").addEventListener("click", async () => {
-    $("closeBtn").disabled = true;
-    try { await db.doc("run/state").set({ closed: !closed, at: Date.now() }); }
-    catch (e) { notice("That didn't save. Check your connection and try again.", true); }
-    $("closeBtn").disabled = false;
-  });
+function setupClear() {
   const btn = $("newBtn"), box = $("newConfirm");
   btn.addEventListener("click", () => { btn.hidden = true; box.hidden = false; $("newYes").focus(); });
   $("newNo").addEventListener("click", () => { box.hidden = true; btn.hidden = false; btn.focus(); });
-  $("newYes").addEventListener("click", async () => {
-    $("newYes").disabled = $("newNo").disabled = true;
-    try {
-      await writeChain;
-      const snap = await db.collection("orders").get();
-      for (const d of snap.docs) await db.doc("orders/" + d.id).delete();
-      await db.doc("run/state").set({ closed: false, at: Date.now() });
-      notice(`Cleared ${snap.size} ${snap.size === 1 ? "order" : "orders"}. The new run is open.`);
-    } catch (e) {
-      notice("Some orders didn't clear. Check your connection and try again.", true);
-    }
-    $("newYes").disabled = $("newNo").disabled = false;
+  $("newYes").addEventListener("click", () => {
+    const n = order.length;
+    order = [];
+    store();
     box.hidden = true; btn.hidden = false;
+    notice(`Cleared ${drinksWord(n)}. Ready for a new run.`);
+    render();
+    $("name").focus();
   });
 }
 
-async function start() {
-  buildBuilder();
-  setupRelay();
-  render();
-  // Outside claude.ai there is no artifact runtime, so nobody can order.
-  if (typeof claude === "undefined") { stopLoading("Open this page on claude.ai and sign in to order."); return; }
-  [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
-  if (user) {
-    const me = await user.me();
-    myId = me.id;
-    if (myId) {
-      $("whoImg").src = safeAvatar(me.avatarUrl);
-      $("whoName").textContent = me.name || "Signed in";
-      $("who").hidden = false;
-    }
-  }
-  if (!db || !myId) { stopLoading("Sign in to claude.ai to order and see the combined order."); return; }
-  owner = await user.isOwner();
-  if (owner) setupOwner();
-  canWrite = await user.can("data.write");
-  if (canWrite === false) { readOnly = true; notice(VIEW_ONLY, true); }
-
-  db.doc("run/state").onSnapshot(snap => {
-    const data = snap && snap.exists ? snap.data() : null;
-    closed = !!(data && data.closed === true);
-    render();
-  }, () => {});
-
-  db.collection("orders").onSnapshot(snap => {
-    const next = new Map();
-    for (const d of snap.docs) {
-      let drinks;
-      try { drinks = cleanDrinks(d.data()); } catch (e) { continue; }
-      if (drinks.length) next.set(d.id, drinks);
-    }
-    // A snapshot may predate my pending writes, so keep my local order until they land.
-    if (pending) {
-      const mine = orders.get(myId) || [];
-      if (mine.length) next.set(myId, mine); else next.delete(myId);
-    } else {
-      saved = next.get(myId) || [];
-    }
-    orders = next;
-    loaded = true;
-    render();
-  }, () => {
-    if (loaded) notice("Live updates stopped. Reload the page to reconnect.", true);
-    else stopLoading("Orders couldn't load. Reload the page to try again.");
-  });
-}
-
-function stopLoading(msg) {
-  loaded = true; unavailable = true; readOnly = true;
-  notice(msg, true);
-  render();
-}
-
-start().catch(() => stopLoading("Orders couldn't load. Reload the page to try again."));
+load();
+buildBuilder();
+setupRelay();
+setupClear();
+render();
 </script>
 
 </body>
